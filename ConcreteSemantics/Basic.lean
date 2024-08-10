@@ -1,3 +1,5 @@
+/-! ## 7.1 IMP Commands -/
+
 /-- 変数（の名前）。
 ここでは簡単のために、すべての文字列が変数として存在するものとする -/
 abbrev Variable := String
@@ -15,14 +17,14 @@ inductive Stmt : Type where
   * 2つめの引数 `a : State → Nat` は arithmetic expression を表していて、
     変数への値の割り当て（つまり `State`）が与えられるごとに何か値を返すものとされる。-/
   | assign : Variable → (State → Nat) → Stmt
-  /-- 2つのコマンドを続けて実行する -/
+  /-- 2つのコマンドを続けて実行する。`;;` で表される。 -/
   | seq : Stmt → Stmt → Stmt
   /-- if 文。`ifThenElse B S T` は、`B` が真のとき `S` を実行して `B` が偽のとき `T` を実行することに対応。-/
   | ifThenElse : (State → Prop) → Stmt → Stmt → Stmt
   /-- while 文 -/
   | whileDo : (State → Prop) → Stmt → Stmt
 
-@[inherit_doc] infix:60 "; " => Stmt.seq
+@[inherit_doc] infix:60 ";; " => Stmt.seq
 
 
 open Stmt
@@ -30,12 +32,16 @@ open Stmt
 /-- `x > y` が成り立つ間、`x := x - 1` という代入文を実行し続けるプログラム -/
 def sillyLoop : Stmt :=
   whileDo (fun s => s "x" > s "y")
-    (skip; assign "x" (fun s => s "x" - 1))
+    (skip;; assign "x" (fun s => s "x" - 1))
 
+/- ## 7.2 Big-Step Semantics
+
+### 7.2.1 Definition
+-/
 set_option quotPrecheck false in
 
 /-- 状態 `s : State` があったとき、変数 `x` に対してだけ値を更新したものを表す記法 -/
-notation:70 s:70 "[" x:70 "↦" n:70 "]" => (fun v ↦ if v = x then n else s v)
+notation s:70 "[" x:70 "↦" n:70 "]" => (fun v ↦ if v = x then n else s v)
 
 /-- BigStep 意味論。操作的意味論の一種。コマンドの実行前と実行後の状態だけを見て中間状態を見ないので big step と呼ばれる。
 * 1つめの引数の `(c, s) : Stmt × State` は、初期状態 `s` のもとでコマンド `c` を実行することに対応。
@@ -55,7 +61,7 @@ inductive BigStep : Stmt × State → State → Prop where
   コマンド `S` により状態が `s` から `t` に変わり、 コマンド `T` により状態が `t` から `u` に変わるのであれば、
   コマンド `S; T` により状態は `s` から `u` に変わる。-/
   | seq (S T : Stmt)(s t u : State) (hS : BigStep (S, s) t) (hT : BigStep (T, t) u):
-    BigStep (S; T, s) u
+    BigStep (S;; T, s) u
 
   /-- if 文の、条件式が true のときの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、かつ条件式が真であるとき
@@ -87,4 +93,60 @@ inductive BigStep : Stmt × State → State → Prop where
   /-- while 文の、条件式が偽のときの意味論。条件文 `B` が偽のとき、コマンド `S` の内容に関わらず、
   コマンド `whileDo B S` は状態を変化させない。-/
   | while_false (B S s) (hcond : ¬ B s) : BigStep (whileDo B S, s) s
-def hello := "world"
+
+-- BigStep のための見やすい記法を用意する
+@[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep (S, s) t
+
+-- ラムダ式を表すのに `=>` ではなくて `↦` を使う
+-- これにより BigStep との記号の混同を避ける
+set_option pp.unicode.fun true
+
+/-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
+example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
+  -- sillyLoop の定義を展開する
+  dsimp [sillyLoop]
+
+  -- 状態が `x ↦ 1, y ↦ 0` なので条件式は真になる。
+  -- したがって while_true の条件を書き下す
+  apply BigStep.while_true
+
+  -- 条件式 `x > y` が真であること
+  case hcond =>
+    simp
+
+  case hbody =>
+    -- `;` でつながっているのを分解する
+    apply BigStep.seq
+    · apply BigStep.skip
+    · apply BigStep.assign
+
+  case hrest =>
+    simp only [gt_iff_lt, ↓reduceIte, Nat.sub_self]
+
+    -- 状態が複雑なラムダ式になっているので簡約する
+    generalize hs : (fun v ↦ if v = "x" then 0 else if v = "x" then 1 else 0) = s
+    replace hs : s = (fun v ↦ 0) := by
+      ext v
+      rw [← hs]
+      simp
+    rw [hs]
+
+    -- このとき状態は `x ↦ 0, y ↦ 0` なので条件式は偽。
+    -- したがって while_false を使う
+    apply BigStep.while_false
+    simp
+
+/- ### 7.2.2 Deriving IMP Executions -/
+
+/-- `x := 5; y := x` という代入を続けて行うプログラム -/
+def set_to_five : Stmt :=
+  assign "x" (fun _ ↦ 5);; assign "y" (fun s ↦ s "x")
+
+/-- `set_to_five` コマンドにより、任意の状態 `s` は `x = 5, y = 5` とセットされた状態に変わる。 -/
+example (s : State) : (set_to_five, s) ==> (s["x" ↦ 5]["y" ↦ 5]) := by
+  -- set_to_five の定義を展開する
+  dsimp [set_to_five]
+
+  apply BigStep.seq <;> apply BigStep.assign
+
+/- ### 7.2.3 Rule Inversion -/
