@@ -97,10 +97,6 @@ inductive BigStep : Stmt × State → State → Prop where
 -- BigStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep (S, s) t
 
--- ラムダ式を表すのに `=>` ではなくて `↦` を使う
--- これにより BigStep との記号の混同を避ける
-set_option pp.unicode.fun true
-
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
   -- sillyLoop の定義を展開する

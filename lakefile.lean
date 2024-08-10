@@ -6,7 +6,8 @@ package «concreteSemantics» where
   leanOptions := #[
     ⟨`autoImplicit, false⟩,
     ⟨`relaxedAutoImplicit, false⟩,
-    ⟨`linter.missingDocs, true⟩
+    ⟨`linter.missingDocs, true⟩,
+    ⟨`pp.unicode.fun, true⟩
   ]
 
 lean_lib «ConcreteSemantics» where
