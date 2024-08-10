@@ -4,15 +4,18 @@ open Lake DSL
 package «concreteSemantics» where
   -- add package configuration options here
   leanOptions := #[
+    -- autoImplicit は悪
     ⟨`autoImplicit, false⟩,
     ⟨`relaxedAutoImplicit, false⟩,
+
+    -- ドキュメントコマンドを書くことを強制する
     ⟨`linter.missingDocs, true⟩,
+
+    -- ラムダ式で `=>` の代わりに `↦` を使う
     ⟨`pp.unicode.fun, true⟩
   ]
 
+@[default_target]
 lean_lib «ConcreteSemantics» where
   -- add library configuration options here
-
-@[default_target]
-lean_exe «concretesemantics» where
-  root := `Main
+  globs := #[.submodules `ConcreteSemantics]
