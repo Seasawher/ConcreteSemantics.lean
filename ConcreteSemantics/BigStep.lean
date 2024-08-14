@@ -26,19 +26,19 @@ inductive BigStep : Stmt × State → State → Prop where
   /-- seq コマンドの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、 コマンド `T` により状態が `t` から `u` に変わるのであれば、
   コマンド `S; T` により状態は `s` から `u` に変わる。-/
-  | seq (S T : Stmt)(s t u : State) (hS : BigStep (S, s) t) (hT : BigStep (T, t) u):
+  | seq {S T : Stmt} {s t u : State} (hS : BigStep (S, s) t) (hT : BigStep (T, t) u):
     BigStep (S;; T, s) u
 
   /-- if 文の、条件式が true のときの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、かつ条件式が真であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | if_true (B : State → Prop)(S T : Stmt)(s t : State) (hcond : B s) (hbody : BigStep (S, s) t) :
+  | if_true {B : State → Prop}{s t : State}(hcond : B s)(S T : Stmt)(hbody : BigStep (S, s) t) :
     BigStep (ifThenElse B S T, s) t
 
   /-- if 文の、条件式が false のときの意味論。
   コマンド `T` により状態が `s` から `t` に変わり、かつ条件式が偽であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | if_false (B : State → Prop)(S T : Stmt)(s t : State) (hcond : ¬ B s) (hbody : BigStep (T, s) t) :
+  | if_false {B : State → Prop}{s t : State}(hcond : ¬ B s)(S T : Stmt)(hbody : BigStep (T, s) t) :
     BigStep (ifThenElse B S T, s) t
 
   /-- while 文の、条件式が真のときの意味論。
@@ -53,12 +53,12 @@ inductive BigStep : Stmt × State → State → Prop where
   #### 補足
   `while_true` の評価は「終わらないかもしれない」ものである必要がある。だから `BigStep` を再帰関数ではなく帰納的命題として定義する必要があった。
   -/
-  | while_true (B S s t u) (hcond : B s) (hbody : BigStep (S, s) t) (hrest : BigStep (whileDo B S, t) u) :
+  | while_true {B S s t u} (hcond : B s) (hbody : BigStep (S, s) t) (hrest : BigStep (whileDo B S, t) u) :
     BigStep (whileDo B S, s) u
 
   /-- while 文の、条件式が偽のときの意味論。条件文 `B` が偽のとき、コマンド `S` の内容に関わらず、
   コマンド `whileDo B S` は状態を変化させない。-/
-  | while_false (B S s) (hcond : ¬ B s) : BigStep (whileDo B S, s) s
+  | while_false {B S s} (hcond : ¬ B s) : BigStep (whileDo B S, s) s
 
 -- BigStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep (S, s) t
@@ -98,6 +98,42 @@ example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
     apply BigStep.while_false
     simp
 
+/-! BigStep の形をしたゴールを証明するタクティク `big_step` を定義する -/
+section bigstep_tactic
+
+/-- `(S, s) ==> t` の形をしたゴールを示すためのタクティク -/
+syntax "big_step" : tactic
+
+-- 以下の変換ルールは下から順番に試されてゆき、失敗した時点で次のものに移る。成功したときに展開先が確定する
+
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.skip)
+
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.assign)
+
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.seq)
+
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.seq (by assumption) (by assumption))
+
+-- hcond を引数として渡して apply することにより、
+-- if_true を使うべき場面で if_false へ展開してしまうバグを防止している
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.if_true (hcond := by assumption) <;> assumption)
+
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.if_false (hcond := by assumption) <;> assumption)
+
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.while_true (hcond := by assumption) <;> try simp_all)
+
+macro_rules
+  | `(tactic| big_step) => `(tactic| apply BigStep.while_false (hcond := by assumption) <;> try simp_all)
+
+end bigstep_tactic
+
 /- ### 7.2.2 Deriving IMP Executions -/
 
 /-- `x := 5; y := x` という代入を続けて行うプログラム -/
@@ -109,4 +145,4 @@ example (s : State) : (set_to_five, s) ==> (s["x" ↦ 5]["y" ↦ 5]) := by
   -- set_to_five の定義を展開する
   dsimp [set_to_five]
 
-  apply BigStep.seq <;> apply BigStep.assign
+  big_step <;> big_step
