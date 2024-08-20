@@ -68,6 +68,81 @@ inductive BigStep : Stmt × State → State → Prop where
 -- BigStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep (S, s) t
 
+/-- `B`が真の時、 `whileDo B S` は `S;; whileDo B S` と同じ意味であることを示す -/
+theorem while_true_seq_self {B S s t} (hcond : B s) : (whileDo B S, s) ==> t ↔ (S;; whileDo B S, s) ==> t := by
+  -- 両方向示す
+  constructor <;> intro h
+
+  -- 左から右を示す
+  case mp =>
+    -- `whileDo` が当てはまる評価規則は `BigStep.while_true` と `BigStep.while_false` しかない
+    cases h
+
+    -- while_false の場合は仮定`hcond`と矛盾するので考えない
+    case while_false => contradiction
+
+    -- while_true の場合、 `hbody` と `hrest` から `BigStep.seq` を適用できる
+    case while_true _ hbody hrest =>
+      apply BigStep.seq hbody hrest
+
+  -- 右から左を示す
+  case mpr =>
+    -- 文が `S;; T` の形なので、当てはまる評価規則は`BigStep.seq`だけ
+    cases h
+
+    -- `hS` `hT` がそれぞれ `BigStep.while_true` の `hbody` `hrest` に対応している
+    case seq _ hS hT =>
+      exact BigStep.while_true hcond hS hT
+
+/-- `B`が偽の時、 `whileDo B S` は `skip` と同じ意味であることを示す -/
+theorem while_false_skip {B S s t} (hcond : ¬ B s) : (whileDo B S, s) ==> t ↔ (skip, s) ==> t := by
+  -- 両方向示す
+  constructor <;> intro h
+
+  -- 左から右を示す
+  case mp =>
+    cases h
+
+    -- while_true の場合は仮定`hcond`と矛盾するので考えない
+    case while_true => contradiction
+
+    case while_false =>
+      apply BigStep.skip
+
+  -- 右から左を示す
+  case mpr =>
+    cases h
+
+    case skip =>
+      exact BigStep.while_false hcond
+
+/-- `whileDo B S` と `ifThenElse B (S;; whileDo B S) skip` は同じ
+(SmallStep 意味論では`whileDo`の意味をこのように定義できる)
+-/
+theorem while_if {B S s t} : (whileDo B S, s) ==> t ↔ (ifThenElse B (S;; whileDo B S) skip, s) ==> t := by
+  constructor <;> intro h
+
+  case mp =>
+    cases h
+    case while_true hcond hbody hrest =>
+      apply BigStep.if_true hcond
+      apply BigStep.seq hbody hrest
+
+    case while_false hcond =>
+      apply BigStep.if_false hcond
+      apply BigStep.skip
+
+  case mpr =>
+    cases h
+    case if_true hcond hbody =>
+      cases hbody
+      case seq hbody hrest =>
+        apply BigStep.while_true hcond hbody hrest
+
+    case if_false hcond hbody =>
+      cases hbody
+      apply BigStep.while_false hcond
+
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
   -- sillyLoop の定義を展開する
