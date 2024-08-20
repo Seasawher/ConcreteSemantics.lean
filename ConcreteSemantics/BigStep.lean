@@ -12,6 +12,8 @@ notation s:70 "[" x:70 "↦" n:70 "]" => (fun v ↦ if v = x then n else s v)
 /-- BigStep 意味論。操作的意味論の一種。コマンドの実行前と実行後の状態だけを見て中間状態を見ないので big step と呼ばれる。
 * 1つめの引数の `(c, s) : Stmt × State` は、初期状態 `s` のもとでコマンド `c` を実行することに対応。
 * 2つめの引数の `t : State` は、コマンドが終了したときの状態に対応。
+
+`BigStep (c, s) t` を、`(c, s) ==> t` と書く。
 -/
 inductive BigStep : Stmt × State → State → Prop where
   /-- skip コマンドの意味論。
@@ -21,27 +23,30 @@ inductive BigStep : Stmt × State → State → Prop where
   /-- assign コマンドの意味論。
   代入文 `x := a` の実行前に状態が `s` であったなら、代入文の実行後には状態は変数 `x` についてだけ更新される。
   `x` の値は、式 `a` を状態 `s` において評価したものに変わる。 -/
-  | assign (x : Variable)(a : State → Nat)(s : State) : BigStep (assign x a, s) (s[x ↦ a s])
+  | assign (x : Variable) (a : State → Nat) (s : State) : BigStep (assign x a, s) (s[x ↦ a s])
 
   /-- seq コマンドの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、 コマンド `T` により状態が `t` から `u` に変わるのであれば、
-  コマンド `S; T` により状態は `s` から `u` に変わる。-/
-  | seq {S T : Stmt} {s t u : State} (hS : BigStep (S, s) t) (hT : BigStep (T, t) u):
+  コマンド `S;; T` により状態は `s` から `u` に変わる。-/
+  | seq {S T : Stmt} {s t u : State} (hS : BigStep (S, s) t) (hT : BigStep (T, t) u) :
     BigStep (S;; T, s) u
 
   /-- if 文の、条件式が true のときの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、かつ条件式が真であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | if_true {B : State → Prop}{s t : State}(hcond : B s)(S T : Stmt)(hbody : BigStep (S, s) t) :
+  | if_true {B : State → Prop} {s t : State} (hcond : B s) (S T : Stmt) (hbody : BigStep (S, s) t) :
     BigStep (ifThenElse B S T, s) t
 
   /-- if 文の、条件式が false のときの意味論。
   コマンド `T` により状態が `s` から `t` に変わり、かつ条件式が偽であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | if_false {B : State → Prop}{s t : State}(hcond : ¬ B s)(S T : Stmt)(hbody : BigStep (T, s) t) :
+  | if_false {B : State → Prop} {s t : State} (hcond : ¬ B s) (S T : Stmt) (hbody : BigStep (T, s) t) :
     BigStep (ifThenElse B S T, s) t
 
   /-- while 文の、条件式が真のときの意味論。
+  `whileDo B S` は、開始時に `B` が成り立っているなら、
+  `S` を実行してから `whileDo B S` を実行するのと同じ意味になる。
+
   * 前提1: コマンド `S` により状態が `s` から `t` に変わり、
   * 前提2: かつ `whileDo B S` により状態が `t` から `u` に変わるのであれば、
   * 帰結: `whileDo B S` により状態は `s` からスタートさせても `u` に変わる。
@@ -145,4 +150,12 @@ example (s : State) : (set_to_five, s) ==> (s["x" ↦ 5]["y" ↦ 5]) := by
   -- set_to_five の定義を展開する
   dsimp [set_to_five]
 
-  big_step <;> big_step
+  -- big_step タクティクを使う証明
+  try
+    big_step <;> big_step
+    done
+    fail
+
+  -- big_step タクティクを使わずに証明する
+  apply BigStep.seq <;> apply BigStep.assign
+  done
