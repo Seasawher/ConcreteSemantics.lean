@@ -1,4 +1,5 @@
 import ConcreteSemantics.Stmt
+import Aesop
 
 /- ## 7.2 Big-Step Semantics
 
@@ -99,42 +100,6 @@ example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
     apply BigStep.while_false
     simp
 
-/-! BigStep の形をしたゴールを証明するタクティク `big_step` を定義する -/
-section bigstep_tactic
-
-/-- `(S, s) ==> t` の形をしたゴールを示すためのタクティク -/
-syntax "big_step" : tactic
-
--- 以下の変換ルールは下から順番に試されてゆき、失敗した時点で次のものに移る。成功したときに展開先が確定する
-
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.skip)
-
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.assign)
-
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.seq)
-
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.seq (by assumption) (by assumption))
-
--- hcond を引数として渡して apply することにより、
--- if_true を使うべき場面で if_false へ展開してしまうバグを防止している
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.if_true (hcond := by assumption) <;> assumption)
-
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.if_false (hcond := by assumption) <;> assumption)
-
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.while_true (hcond := by assumption) <;> try simp_all)
-
-macro_rules
-  | `(tactic| big_step) => `(tactic| apply BigStep.while_false (hcond := by assumption) <;> try simp_all)
-
-end bigstep_tactic
-
 /- ### 7.2.2 Deriving IMP Executions -/
 
 /-- `x := 5; y := x` という代入を続けて行うプログラム -/
@@ -146,12 +111,4 @@ example (s : State) : (set_to_five, s) ==> (s["x" ↦ 5]["y" ↦ 5]) := by
   -- set_to_five の定義を展開する
   dsimp [set_to_five]
 
-  -- big_step タクティクを使う証明
-  try
-    big_step <;> big_step
-    done
-    fail
-
-  -- big_step タクティクを使わずに証明する
   apply BigStep.seq <;> apply BigStep.assign
-  done

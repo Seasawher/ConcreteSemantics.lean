@@ -21,10 +21,7 @@ namespace BigStep
   case mpr =>
     -- s = t なので、BigStep.skip の定義から従う
     rw [h]
-    try
-      big_step
-      done
-      fail
+
     apply BigStep.skip
 
 /-- seq に関する inversion rule -/
@@ -44,12 +41,6 @@ namespace BigStep
   case mpr =>
     obtain ⟨t, hS, hT⟩ := h
 
-    -- big_step タクティクを使う証明
-    try
-      big_step
-      done
-      fail
-
     -- big_step タクティクを使わない証明
     apply BigStep.seq <;> assumption
 
@@ -67,20 +58,41 @@ namespace BigStep
   -- 右から左を示す
   case mpr =>
     rcases h with ⟨hcond, hbody⟩ | ⟨hcond, hbody⟩
-    · big_step
-    · big_step
+    · apply BigStep.if_true hcond <;> assumption
+    · apply BigStep.if_false hcond <;> assumption
 
 /-- while に関する inversion rule -/
 theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
     (∃ t, B s ∧ (S, s) ==> t ∧ (whileDo B S, t) ==> u) ∨ (¬ B s ∧ u = s) := by
   constructor <;> intro h
-  · by_cases hcond : B s
+
+  case mp =>
+    -- 条件式が成り立つかどうかで場合分けする
+    by_cases hcond : B s
+
+    -- 成り立つ場合
     case pos =>
       left
-      simp_all only [true_and]
-      sorry
+
+      -- `(whileDo B S,s) ==> u` という仮定を条件式が真ということを使って分解
+      cases h <;> try contradiction
+
+      -- 変数が死ぬが、aesop は rename_i を使ってくれるので通る
+      aesop
+
+    -- 成り立たない場合
     case neg =>
-      sorry
-  sorry
+      right
+
+      -- 条件式が成立しないことと `(whileDo B S,s) ==> u` という仮定から、
+      -- `u = s` であることがわかる
+      cases h <;> try contradiction
+      simp_all
+
+  case mpr =>
+    -- 条件式が成り立つかどうかで場合分けする
+    rcases h with ⟨t, hcond, hbody, hrest⟩ | ⟨hcond, rfl⟩
+    · apply BigStep.while_true hcond hbody hrest
+    · apply BigStep.while_false (hcond := by assumption)
 
 end BigStep
