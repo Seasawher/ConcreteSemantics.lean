@@ -106,4 +106,15 @@ theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
   rw [while_iff]
   simp [hcond]
 
+/- inversion rule を使って次のような命題が証明できる -/
+
+example (c₁ c₂ : Stmt) (s₁ s₃ : State) : (c₁;; c₂, s₁) ==> s₃ →
+    ∃s₂, (c₁, s₁) ==> s₂ ∧ (c₂, s₂) ==> s₃ := by
+  aesop
+
+/-- seq `;;` を左結合にしても右結合にしても意味論の観点からは変化がない。 -/
+theorem seq_assoc (c₁ c₂ c₃ : Stmt) (s u : State) :
+    ((c₁;; c₂);; c₃, s) ==> u ↔ (c₁;; (c₂;; c₃), s) ==> u := by
+  aesop
+
 end BigStep
