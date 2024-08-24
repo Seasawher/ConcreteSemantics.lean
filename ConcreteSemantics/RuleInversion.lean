@@ -95,4 +95,15 @@ theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
     · apply BigStep.while_true hcond hbody hrest
     · apply BigStep.while_false (hcond := by assumption)
 
+/-- while の条件式が真のときの inversion rule -/
+@[simp] theorem while_true_iff {B S s u} (hcond : B s) : (whileDo B S, s) ==> u ↔
+    (∃ t, (S, s) ==> t ∧ (whileDo B S, t) ==> u) := by
+  rw [while_iff]
+  simp [hcond]
+
+/-- while の条件式が偽のときの inversion rule -/
+@[simp] theorem while_false_iff {B S s t} (hcond : ¬ B s) : (whileDo B S, s) ==> t ↔ t = s := by
+  rw [while_iff]
+  simp [hcond]
+
 end BigStep
