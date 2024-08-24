@@ -91,12 +91,8 @@ example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
     simp only [gt_iff_lt, ↓reduceIte, Nat.sub_self]
 
     -- 状態が複雑なラムダ式になっているので簡約する
-    generalize hs : (fun v ↦ if v = "x" then 0 else if v = "x" then 1 else 0) = s
-    replace hs : s = (fun v ↦ 0) := by
-      ext v
-      rw [← hs]
-      simp
-    rw [hs]
+    conv in if _ = "x" then _ else _ =>
+      tactic => split <;> rfl
 
     -- このとき状態は `x ↦ 0, y ↦ 0` なので条件式は偽。
     -- したがって while_false を使う
