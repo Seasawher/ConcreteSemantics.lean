@@ -19,29 +19,29 @@ notation s:70 "[" x:70 "↦" n:70 "]" => (fun v ↦ if v = x then n else s v)
 inductive BigStep : Stmt × State → State → Prop where
   /-- skip コマンドの意味論。
   skip コマンドの実行前に状態が `s` であったなら、実行後も `s` のまま変わらない。-/
-  | skip (s : State) : BigStep (skip, s) s
+  | protected skip (s : State) : BigStep (skip, s) s
 
   /-- assign コマンドの意味論。
   代入文 `x := a` の実行前に状態が `s` であったなら、代入文の実行後には状態は変数 `x` についてだけ更新される。
   `x` の値は、式 `a` を状態 `s` において評価したものに変わる。 -/
-  | assign (x : Variable) (a : State → Nat) (s : State) : BigStep (assign x a, s) (s[x ↦ a s])
+  | protected assign (x : Variable) (a : State → Nat) (s : State) : BigStep (assign x a, s) (s[x ↦ a s])
 
   /-- seq コマンドの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、 コマンド `T` により状態が `t` から `u` に変わるのであれば、
   コマンド `S;; T` により状態は `s` から `u` に変わる。-/
-  | seq {S T : Stmt} {s t u : State} (hS : BigStep (S, s) t) (hT : BigStep (T, t) u) :
+  | protected seq {S T : Stmt} {s t u : State} (hS : BigStep (S, s) t) (hT : BigStep (T, t) u) :
     BigStep (S;; T, s) u
 
   /-- if 文の、条件式が true のときの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、かつ条件式が真であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | if_true {B : State → Prop} {s t : State} (hcond : B s) (S T : Stmt) (hbody : BigStep (S, s) t) :
+  | protected if_true {B : State → Prop} {s t : State} (hcond : B s) (S T : Stmt) (hbody : BigStep (S, s) t) :
     BigStep (ifThenElse B S T, s) t
 
   /-- if 文の、条件式が false のときの意味論。
   コマンド `T` により状態が `s` から `t` に変わり、かつ条件式が偽であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | if_false {B : State → Prop} {s t : State} (hcond : ¬ B s) (S T : Stmt) (hbody : BigStep (T, s) t) :
+  | protected if_false {B : State → Prop} {s t : State} (hcond : ¬ B s) (S T : Stmt) (hbody : BigStep (T, s) t) :
     BigStep (ifThenElse B S T, s) t
 
   /-- while 文の、条件式が真のときの意味論。
