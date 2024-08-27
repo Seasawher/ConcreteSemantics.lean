@@ -51,20 +51,10 @@ theorem while_eq_if_then_skip (B : State → Prop) (S : Stmt) :
   -- 状態 `s, t` が与えられたとする
   intro s t
 
-  -- 両方向を示す
-  constructor <;> intro h
-
-  case mp =>
-    -- B が真かどうかで分岐
-    rw [while_iff] at h
-    -- aesop で片を付ける
-    aesop
-
-  case mpr =>
-    -- 条件が真かどうかで分岐する
-    -- while_iff を追加
-    aesop (add safe [while_iff])
-
-    done
+  -- while_iff で条件文の真偽で場合分けして、
+  -- 後は aesop で片づけられる。
+  -- inversion rule をたくさん登録したご利益。
+  rw [while_iff]
+  aesop
 
 end BigStep
