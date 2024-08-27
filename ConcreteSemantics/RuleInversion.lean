@@ -61,7 +61,8 @@ namespace BigStep
     · apply BigStep.if_true hcond <;> assumption
     · apply BigStep.if_false hcond <;> assumption
 
-/-- while に関する inversion rule -/
+/-- while に関する inversion rule。
+条件式が真か偽かで場合分けをする -/
 theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
     (∃ t, B s ∧ (S, s) ==> t ∧ (whileDo B S, t) ==> u) ∨ (¬ B s ∧ u = s) := by
   constructor <;> intro h
@@ -98,12 +99,18 @@ theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
 /-- while の条件式が真のときの inversion rule -/
 @[simp] theorem while_true_iff {B S s u} (hcond : B s) : (whileDo B S, s) ==> u ↔
     (∃ t, (S, s) ==> t ∧ (whileDo B S, t) ==> u) := by
+  -- 条件式の真偽で場合分けをする
   rw [while_iff]
+
+  -- 条件式が成り立つ場合のみ残す
   simp [hcond]
 
 /-- while の条件式が偽のときの inversion rule -/
 @[simp] theorem while_false_iff {B S s t} (hcond : ¬ B s) : (whileDo B S, s) ==> t ↔ t = s := by
+  -- 条件式の真偽で場合分けをする
   rw [while_iff]
+
+  -- 条件式が成り立たない場合のみ残す
   simp [hcond]
 
 /- inversion rule を使って次のような命題が証明できる -/
