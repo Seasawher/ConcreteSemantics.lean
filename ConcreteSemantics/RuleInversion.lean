@@ -62,7 +62,9 @@ namespace BigStep
     · apply BigStep.if_false hcond <;> assumption
 
 /-- while に関する inversion rule。
-条件式が真か偽かで場合分けをする -/
+条件式が真か偽かで場合分けをする
+
+TODO: aesop に自動的に使用してもらう方法を見つける -/
 theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
     (∃ t, B s ∧ (S, s) ==> t ∧ (whileDo B S, t) ==> u) ∨ (¬ B s ∧ u = s) := by
   constructor <;> intro h
