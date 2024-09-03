@@ -52,21 +52,9 @@ theorem while_eq_if_then_skip (B : State → Prop) (S : Stmt) :
   -- 状態 `s, t` が与えられたとする
   intro s t
 
-  -- 両方向を示す
-  constructor <;> intro h
-
-  case mp =>
-    -- B が真かどうかで分岐
-    rw [while_iff] at h
-    -- aesop で片を付ける
-    aesop
-
-  case mpr =>
-    -- 条件が真かどうかで分岐する
-    -- while_iff を追加
-    aesop (add safe [while_iff])
-
-    done
+  -- B が真かどうかで分岐して証明
+  rw [while_iff]
+  aesop
 
 /-- ### Lemma 7.4
 IF 文の両方の分岐が同じコマンド `c` なら、それは `c` と同じ -/
@@ -77,20 +65,10 @@ theorem if_both_eq (B : State → Prop) (c : Stmt) : ifThenElse B c c ≈ c := b
   -- 状態 `s, t` が与えられたとする
   intro s t
 
-  -- 両方向を示す
-  constructor <;> intro h
-
-  case mp =>
-    -- ifThenElse の定義を展開する
-    rw [if_iff] at h
-    -- aesop で片を付ける
-    aesop
-
-  case mpr =>
-    -- ifThenElse の定義を展開する
-    rw [if_iff]
-    -- 条件式が成り立つかどうかで場合分けをする
-    by_cases h : B s <;> simp_all
+  -- ifThenElse の定義を展開する
+  rw [if_iff]
+  -- 条件式が成り立つかどうかで場合分けをして証明
+  by_cases h : B s <;> simp_all
 
 /-- ### Lemma 7.6
 `(while b do c, s) ==> t` かつ `c ≈ c` ならば `(while b do c', s) ==> t` -/
