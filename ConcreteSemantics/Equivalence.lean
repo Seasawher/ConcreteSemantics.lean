@@ -75,6 +75,7 @@ theorem if_both_eq (B : State → Prop) (c : Stmt) : ifThenElse B c c ≈ c := b
 theorem while_congr {B : State → Prop} {c c' : Stmt} {s t : State} (h : c ≈ c') (h_while : (whileDo B c, s) ==> t) :
     (whileDo B c', s) ==> t := by
   -- `whileDo B C` を `x` とおく
+  -- TODO: この generalize がないと次の induction がエラーになるのはなぜか？
   generalize hx : whileDo B c = x at h_while
 
   -- `h_while` に関する帰納法を使う
@@ -82,15 +83,22 @@ theorem while_congr {B : State → Prop} {c c' : Stmt} {s t : State} (h : c ≈ 
   -- `hx` を使うと `while_true` または `while_false` から来ていることが結論できる
   induction h_while <;> cases hx
 
-  case while_true s' t' hcond hbody _ _ hrest =>
-    apply BigStep.while_true (hcond := by assumption)
-    · rw [← h]
-      assumption
-    · exact hrest rfl
-
+  -- 条件式が偽の場合
   case while_false s' hcond =>
     apply BigStep.while_false
     assumption
+
+  -- 条件式が真の場合
+  case while_true s' t' u' hcond' hbody' _ _hrest ih =>
+    apply BigStep.while_true (t := t') (hcond := by assumption)
+
+    case hbody =>
+      -- `c ≈ c'` を使って rw することができる！（知らなかった）
+      rw [← h]
+      assumption
+
+    -- 帰納法の仮定を使う
+    case hrest => simpa using ih
 
 /-- ### Lemma 7.5
 コマンド `c` と `c'` が同値ならば、`While` を付けても同値 -/
