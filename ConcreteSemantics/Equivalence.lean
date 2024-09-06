@@ -74,19 +74,23 @@ theorem if_both_eq (B : State → Prop) (c : Stmt) : ifThenElse B c c ≈ c := b
 `(while b do c, s) ==> t` かつ `c ≈ c` ならば `(while b do c', s) ==> t` -/
 theorem while_congr {B : State → Prop} {c c' : Stmt} {s t : State} (h : c ≈ c') (h_while : (whileDo B c, s) ==> t) :
     (whileDo B c', s) ==> t := by
-  -- cases h_while
+  -- `whileDo B C` を `x` とおく
+  generalize hx : whileDo B c = x at h_while
 
-  -- case while_true w hcond hbody hrest =>
-  --   -- 帰納法の仮定からわかることを書いておく
-  --   have self := while_congr h hrest
+  -- `h_while` に関する帰納法を使う
+  -- `h_while` は BigStep のコンストラクタのどこかから来るが、
+  -- `hx` を使うと `while_true` または `while_false` から来ていることが結論できる
+  induction h_while <;> cases hx
 
-  --   have := h s w |>.mp hbody
-  --   apply BigStep.while_true (hcond := hcond) (hbody := this) (hrest := self)
+  case while_true s' t' hcond hbody _ _ hrest =>
+    apply BigStep.while_true (hcond := by assumption)
+    · rw [← h]
+      assumption
+    · exact hrest rfl
 
-  -- case while_false hcond =>
-  --   apply BigStep.while_false
-  --   assumption
-  sorry
+  case while_false s' hcond =>
+    apply BigStep.while_false
+    assumption
 
 /-- ### Lemma 7.5
 コマンド `c` と `c'` が同値ならば、`While` を付けても同値 -/

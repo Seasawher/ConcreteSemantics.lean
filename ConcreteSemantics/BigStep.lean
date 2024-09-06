@@ -16,33 +16,33 @@ notation s:70 "[" x:70 "↦" n:70 "]" => (fun v ↦ if v = x then n else s v)
 
 `BigStep (c, s) t` を、`(c, s) ==> t` と書く。
 -/
-inductive BigStep : Stmt × State → State → Prop where
+inductive BigStep : Stmt → State → State → Prop where
   /-- skip コマンドの意味論。
   skip コマンドの実行前に状態が `s` であったなら、実行後も `s` のまま変わらない。-/
-  | protected skip (s : State) : BigStep (skip, s) s
+  | protected skip (s : State) : BigStep skip s s
 
   /-- assign コマンドの意味論。
   代入文 `x := a` の実行前に状態が `s` であったなら、代入文の実行後には状態は変数 `x` についてだけ更新される。
   `x` の値は、式 `a` を状態 `s` において評価したものに変わる。 -/
-  | protected assign (x : Variable) (a : State → Nat) (s : State) : BigStep (assign x a, s) (s[x ↦ a s])
+  | protected assign (x : Variable) (a : State → Nat) (s : State) : BigStep (assign x a) s (s[x ↦ a s])
 
   /-- seq コマンドの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、 コマンド `T` により状態が `t` から `u` に変わるのであれば、
   コマンド `S;; T` により状態は `s` から `u` に変わる。-/
-  | protected seq {S T : Stmt} {s t u : State} (hS : BigStep (S, s) t) (hT : BigStep (T, t) u) :
-    BigStep (S;; T, s) u
+  | protected seq {S T : Stmt} {s t u : State} (hS : BigStep S s t) (hT : BigStep T t u) :
+    BigStep (S;; T) s u
 
   /-- if 文の、条件式が true のときの意味論。
   コマンド `S` により状態が `s` から `t` に変わり、かつ条件式が真であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | protected if_true {B : State → Prop} {s t : State} (hcond : B s) (S T : Stmt) (hbody : BigStep (S, s) t) :
-    BigStep (ifThenElse B S T, s) t
+  | protected if_true {B : State → Prop} {s t : State} (hcond : B s) (S T : Stmt) (hbody : BigStep S s t) :
+    BigStep (ifThenElse B S T) s t
 
   /-- if 文の、条件式が false のときの意味論。
   コマンド `T` により状態が `s` から `t` に変わり、かつ条件式が偽であるとき
   `ifThenElse B S T` により状態は `s` から `t` に変わる。 -/
-  | protected if_false {B : State → Prop} {s t : State} (hcond : ¬ B s) (S T : Stmt) (hbody : BigStep (T, s) t) :
-    BigStep (ifThenElse B S T, s) t
+  | protected if_false {B : State → Prop} {s t : State} (hcond : ¬ B s) (S T : Stmt) (hbody : BigStep T s t) :
+    BigStep (ifThenElse B S T) s t
 
   /-- while 文の、条件式が真のときの意味論。
   `whileDo B S` は、開始時に `B` が成り立っているなら、
@@ -59,15 +59,15 @@ inductive BigStep : Stmt × State → State → Prop where
   #### 補足
   `while_true` の評価は「終わらないかもしれない」ものである必要がある。だから `BigStep` を再帰関数ではなく帰納的命題として定義する必要があった。
   -/
-  | while_true {B S s t u} (hcond : B s) (hbody : BigStep (S, s) t) (hrest : BigStep (whileDo B S, t) u) :
-    BigStep (whileDo B S, s) u
+  | while_true {B S s t u} (hcond : B s) (hbody : BigStep S s t) (hrest : BigStep (whileDo B S) t u) :
+    BigStep (whileDo B S) s u
 
   /-- while 文の、条件式が偽のときの意味論。条件文 `B` が偽のとき、コマンド `S` の内容に関わらず、
   コマンド `whileDo B S` は状態を変化させない。-/
-  | while_false {B S s} (hcond : ¬ B s) : BigStep (whileDo B S, s) s
+  | while_false {B S s} (hcond : ¬ B s) : BigStep (whileDo B S) s s
 
 -- BigStep のための見やすい記法を用意する
-@[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep (S, s) t
+@[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep S s t
 
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
