@@ -69,6 +69,9 @@ inductive BigStep : Stmt → State → State → Prop where
 -- BigStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep S s t
 
+-- BigStep がゴールにある場合にそれを aesop が扱えるようにする
+attribute [aesop safe constructors] BigStep
+
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
   -- sillyLoop の定義を展開する
@@ -79,14 +82,9 @@ example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
   apply BigStep.while_true
 
   -- 条件式 `x > y` が真であること
-  case hcond =>
-    simp
+  case hcond => simp
 
-  case hbody =>
-    -- `;` でつながっているのを分解する
-    apply BigStep.seq
-    · apply BigStep.skip
-    · apply BigStep.assign
+  case hbody => aesop
 
   case hrest =>
     simp only [gt_iff_lt, ↓reduceIte, Nat.sub_self]
@@ -97,8 +95,7 @@ example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
 
     -- このとき状態は `x ↦ 0, y ↦ 0` なので条件式は偽。
     -- したがって while_false を使う
-    apply BigStep.while_false
-    simp
+    apply BigStep.while_false (hcond := by simp)
 
 /- ### 7.2.2 Deriving IMP Executions -/
 
@@ -111,4 +108,4 @@ example (s : State) : (set_to_five, s) ==> (s["x" ↦ 5]["y" ↦ 5]) := by
   -- set_to_five の定義を展開する
   dsimp [set_to_five]
 
-  apply BigStep.seq <;> apply BigStep.assign
+  aesop

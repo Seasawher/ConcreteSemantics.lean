@@ -22,7 +22,7 @@ namespace BigStep
     -- s = t なので、BigStep.skip の定義から従う
     rw [h]
 
-    apply BigStep.skip
+    aesop
 
 /-- seq に関する inversion rule -/
 @[simp] theorem seq_iff {S T s u} :
@@ -40,9 +40,7 @@ namespace BigStep
   -- 右から左を示す
   case mpr =>
     obtain ⟨t, hS, hT⟩ := h
-
-    -- big_step タクティクを使わない証明
-    apply BigStep.seq <;> assumption
+    aesop
 
 /-- if に関する inversion rule -/
 @[simp] theorem if_iff {B S T s t} : (ifThenElse B S T, s) ==> t ↔

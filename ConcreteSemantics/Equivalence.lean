@@ -37,7 +37,7 @@ instance : Setoid Stmt where
 /-- `≈` 記号の中身を展開するタクティク -/
 syntax "unfold" "≈" : tactic
 macro_rules
-  | `(tactic|unfold ≈) => `(tactic|dsimp only [(· ≈ ·), Setoid.r, equivCmd])
+  | `(tactic|unfold ≈) => `(tactic| dsimp only [(· ≈ ·), Setoid.r, equivCmd])
 
 /-- ### Lemma 7.3
 `while` 文の意味は、
@@ -84,9 +84,7 @@ theorem while_congr {B : State → Prop} {c c' : Stmt} {s t : State} (h : c ≈ 
   induction h_while <;> cases hx
 
   -- 条件式が偽の場合
-  case while_false s' hcond =>
-    apply BigStep.while_false
-    assumption
+  case while_false s' hcond => aesop
 
   -- 条件式が真の場合
   case while_true s' t' u' hcond' hbody' _ _hrest ih =>
@@ -123,14 +121,12 @@ theorem while_eq_of_eq (B : State → Prop) (c c' : Stmt) (h : c ≈ c') : while
     specialize h s w
 
     -- aesop で片を付ける
-    aesop
     all_goals sorry
 
   case mpr =>
     -- whileDo の定義を展開する
     rw [while_iff]
     -- aesop で片を付ける
-    aesop
     sorry
 
 end BigStep
