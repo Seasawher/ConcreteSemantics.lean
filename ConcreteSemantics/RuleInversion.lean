@@ -38,9 +38,7 @@ namespace BigStep
       exists t
 
   -- 右から左を示す
-  case mpr =>
-    obtain ⟨t, hS, hT⟩ := h
-    aesop
+  case mpr => aesop
 
 /-- if に関する inversion rule -/
 @[simp] theorem if_iff {B S T s t} : (ifThenElse B S T, s) ==> t ↔
