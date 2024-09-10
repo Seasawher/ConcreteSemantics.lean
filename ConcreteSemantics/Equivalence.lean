@@ -111,22 +111,80 @@ theorem while_eq_of_eq (B : State → Prop) (c c' : Stmt) (h : c ≈ c') : while
   constructor <;> intro h'
 
   case mp =>
-    -- whileDo の定義を展開する
-    rw [while_iff] at h'
-    obtain ⟨w, hb, hw, hwh⟩ := h'
-
-    have := h s w |>.mp hw
-    apply BigStep.while_true (hcond := hb) (hbody := this)
-
-    specialize h s w
-
-    -- aesop で片を付ける
-    all_goals sorry
+    -- while_congr を使えば難しいところはすぐに終わる
+    apply while_congr (h := h)
+    assumption
 
   case mpr =>
-    -- whileDo の定義を展開する
-    rw [while_iff]
-    -- aesop で片を付ける
-    sorry
+    -- while_congr を使えば難しいところはすぐに終わる
+    apply while_congr (h := Setoid.symm h)
+    assumption
+
+/-- セミコロン(seq)の congruence Rule -/
+theorem seq_congr {S1 S2 T1 T2 : Stmt} (hS : S1 ≈ S2) (hT : T1 ≈ T2) : S1 ;; T1 ≈ S2 ;; T2 := by
+  -- ≈ の定義を展開する
+  unfold ≈
+
+  -- 状態 `s, t` が与えられたとする
+  intro s t
+
+  -- 両方向を示す
+  constructor <;> intro h
+
+  case mp =>
+    -- seq_iff の定義から仮定を分解する
+    cases h
+    case seq t hS' hT' =>
+      -- 仮定を使って証明する
+      apply BigStep.seq
+      · rw [← hS]
+        assumption
+      · rw [← hT]
+        assumption
+
+  case mpr =>
+    -- seq_iff の定義から仮定を分解する
+    cases h
+    case seq t hS' hT' =>
+      -- 仮定を使って証明する
+      apply BigStep.seq
+      · rw [hS]
+        assumption
+      · rw [hT]
+        assumption
+
+/-- IF に関する congruence rule -/
+theorem if_congr {B : State → Prop} {S1 S2 T1 T2 : Stmt} (hS : S1 ≈ S2) (hT : T1 ≈ T2) :
+    ifThenElse B S1 T1 ≈ ifThenElse B S2 T2 := by
+  -- ≈ の定義を展開する
+  unfold ≈
+
+  -- 状態 `s, t` が与えられたとする
+  intro s t
+
+  -- 両方向を示す
+  constructor <;> intro h
+
+  case mp =>
+    cases h
+    case if_true hcond hbody =>
+      apply BigStep.if_true hcond
+      rwa [← hS]
+
+    case if_false hcond hbody =>
+      apply BigStep.if_false hcond
+      rwa [← hT]
+
+  case mpr =>
+    cases h
+    case if_true hcond hbody =>
+      apply BigStep.if_true hcond
+      rwa [hS]
+
+    case if_false hcond hbody =>
+      apply BigStep.if_false hcond
+      rwa [hT]
+
+
 
 end BigStep

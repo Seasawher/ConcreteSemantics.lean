@@ -70,7 +70,14 @@ inductive BigStep : Stmt → State → State → Prop where
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep S s t
 
 -- BigStep がゴールにある場合にそれを aesop が扱えるようにする
-attribute [aesop unsafe 80% constructors] BigStep
+add_aesop_rules safe [
+  apply BigStep.skip,
+  apply BigStep.assign,
+  apply BigStep.seq,
+  apply BigStep.if_true,
+  apply BigStep.if_false,
+  apply BigStep.while_false]
+add_aesop_rules unsafe 50% [apply BigStep.while_true]
 
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
