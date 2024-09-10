@@ -3,7 +3,7 @@ import ConcreteSemantics.Equivalence
 /- ### 7.2.5 Execution in IMP is Deterministic -/
 
 /-- IMP は決定的 -/
-theorem imp_deterministic (S : Stmt) (s t u : State) (h1 : (S, s) ==> t) (h2 : (S, s) ==> u) : t = u := by
+theorem imp_deterministic (S : Stmt) (s t u : State) (ht : (S, s) ==> t) (hu : (S, s) ==> u) : t = u := by
   induction S generalizing u t s
 
   -- S が skip の場合
@@ -12,17 +12,22 @@ theorem imp_deterministic (S : Stmt) (s t u : State) (h1 : (S, s) ==> t) (h2 : (
 
   -- S が assign の場合
   case assign v a =>
-    cases h1 <;> cases h2
+    cases ht <;> cases hu
     simp
 
   -- S が seq の場合
   case seq c c' hc hc' =>
-    simp [BigStep.seq_iff] at h1 h2
-    rcases h1 with ⟨t', h1, h1'⟩
-    rcases h2 with ⟨u', h2, h2'⟩
+    simp [BigStep.seq_iff] at ht hu
+    rcases ht with ⟨t', ht, ht'⟩
+    rcases hu with ⟨u', hu, hu'⟩
+
+    -- 帰納法の仮定から、`t' = u'` であることがわかる
     have eq' : t' = u' := by
       apply hc <;> assumption
-    rw [eq'] at h1' h1; clear h1 h2 eq' hc
+    rw [eq'] at ht' ht
+    clear ht hu eq' hc
+
+    -- 再び帰納法の仮定を使う
     apply hc' (s := u') <;> assumption
 
   all_goals sorry
