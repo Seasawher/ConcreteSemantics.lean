@@ -25,4 +25,4 @@ theorem imp_deterministic (S : Stmt) (s t u : State) (h1 : (S, s) ==> t) (h2 : (
     rw [eq'] at h1' h1; clear h1 h2 eq' hc
     apply hc' (s := u') <;> assumption
 
-  sorry
+  all_goals sorry
