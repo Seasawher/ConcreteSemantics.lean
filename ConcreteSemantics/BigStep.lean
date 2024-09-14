@@ -64,8 +64,16 @@ inductive BigStep : Stmt → State → State → Prop where
 add_aesop_rules safe [apply BigStep.skip (rule_sets := [BigStepRules])]
 add_aesop_rules safe [apply BigStep.assign (rule_sets := [BigStepRules])]
 add_aesop_rules safe [apply BigStep.seq (rule_sets := [BigStepRules])]
-add_aesop_rules safe [apply BigStep.if_true (rule_sets := [BigStepRules])]
-add_aesop_rules safe [apply BigStep.if_false (rule_sets := [BigStepRules])]
+add_aesop_rules safe [
+  tactic
+  (by apply BigStep.if_true (hcond := by assumption) (hbody := by assumption))
+  (rule_sets := [BigStepRules]),
+]
+add_aesop_rules safe [
+  tactic
+  (by apply BigStep.if_false (hcond := by assumption) (hbody := by assumption))
+  (rule_sets := [BigStepRules]),
+]
 add_aesop_rules safe [apply BigStep.while_false (rule_sets := [BigStepRules])]
 add_aesop_rules unsafe 50% [apply BigStep.while_true (rule_sets := [BigStepRules])]
 

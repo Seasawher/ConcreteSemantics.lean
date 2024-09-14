@@ -39,7 +39,7 @@ add_aesop_rules safe [destruct eq_of_skip (rule_sets := [BigStepRules])]
 theorem if_iff_of_true {B S T s t} (hcond : B s) : (ifThenElse B S T, s) ==> t ↔ (S, s) ==> t := by
   constructor <;> intro h
   · cases h <;> simp_all
-  · apply BigStep.if_true (hcond := by assumption) (hbody := by assumption)
+  · big_step
 
 add_aesop_rules norm [simp if_iff_of_true (rule_sets := [BigStepRules])]
 
@@ -47,7 +47,7 @@ add_aesop_rules norm [simp if_iff_of_true (rule_sets := [BigStepRules])]
 theorem if_iff_of_false {B S T s t} (hcond : ¬ B s) : (ifThenElse B S T, s) ==> t ↔ (T, s) ==> t := by
   constructor <;> intro h
   · cases h <;> simp_all
-  · apply BigStep.if_false (hcond := by assumption) (hbody := by assumption)
+  · big_step
 
 add_aesop_rules norm [simp if_iff_of_false (rule_sets := [BigStepRules])]
 
