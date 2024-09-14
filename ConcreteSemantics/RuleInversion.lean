@@ -6,23 +6,18 @@ import ConcreteSemantics.BigStep
 
 namespace BigStep
 
+/-- skip に関する BigStep から状態の簡単な式を導く -/
+theorem eq_of_skip {s t : State} : (Stmt.skip, s) ==> t → t = s := by
+  intro h
+  cases h
+  rfl
+
+-- eq_of_skip を使って仮定を言い換える
+add_aesop_rules safe [destruct eq_of_skip (rule_sets := [BigStepRules])]
+
 /-- skip に関する inversion rule -/
 @[simp] theorem skip_iff {s t : State} : (Stmt.skip, s) ==> t ↔ t = s := by
-  -- 両方向示す
-  constructor <;> intro h
-
-  -- 左から右を示す
-  case mp =>
-    -- BigStep.skip の定義から、s = t であることがわかる
-    cases h
-    rfl
-
-  -- 右から左を示す
-  case mpr =>
-    -- s = t なので、BigStep.skip の定義から従う
-    rw [h]
-
-    aesop
+  big_step
 
 /-- seq に関する inversion rule -/
 @[simp] theorem seq_iff {S T s u} :
@@ -38,7 +33,23 @@ namespace BigStep
       exists t
 
   -- 右から左を示す
-  case mpr => aesop
+  case mpr => big_step
+
+/-- if に関する inversion rule (条件式が真の場合) -/
+theorem if_iff_of_true {B S T s t} (hcond : B s) : (ifThenElse B S T, s) ==> t ↔ (S, s) ==> t := by
+  constructor <;> intro h
+  · cases h <;> simp_all
+  · apply BigStep.if_true (hcond := by assumption) (hbody := by assumption)
+
+add_aesop_rules norm [simp if_iff_of_true (rule_sets := [BigStepRules])]
+
+/-- if に関する inversion rule (条件式が偽の場合) -/
+theorem if_iff_of_false {B S T s t} (hcond : ¬ B s) : (ifThenElse B S T, s) ==> t ↔ (T, s) ==> t := by
+  constructor <;> intro h
+  · cases h <;> simp_all
+  · apply BigStep.if_false (hcond := by assumption) (hbody := by assumption)
+
+add_aesop_rules norm [simp if_iff_of_false (rule_sets := [BigStepRules])]
 
 /-- if に関する inversion rule -/
 @[simp] theorem if_iff {B S T s t} : (ifThenElse B S T, s) ==> t ↔
@@ -54,8 +65,8 @@ namespace BigStep
   -- 右から左を示す
   case mpr =>
     rcases h with ⟨hcond, hbody⟩ | ⟨hcond, hbody⟩
-    · apply BigStep.if_true hcond <;> assumption
-    · apply BigStep.if_false hcond <;> assumption
+    · big_step
+    · big_step
 
 /-- while に関する inversion rule。
 条件式が真か偽かで場合分けをする
@@ -115,11 +126,11 @@ theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
 
 example (c₁ c₂ : Stmt) (s₁ s₃ : State) : (c₁;; c₂, s₁) ==> s₃ →
     ∃s₂, (c₁, s₁) ==> s₂ ∧ (c₂, s₂) ==> s₃ := by
-  aesop
+  big_step
 
 /-- seq `;;` を左結合にしても右結合にしても意味論の観点からは変化がない。 -/
 theorem seq_assoc (c₁ c₂ c₃ : Stmt) (s u : State) :
     ((c₁;; c₂);; c₃, s) ==> u ↔ (c₁;; (c₂;; c₃), s) ==> u := by
-  aesop
+  big_step
 
 end BigStep

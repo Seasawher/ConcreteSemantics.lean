@@ -1,5 +1,5 @@
 import ConcreteSemantics.Stmt
-import Aesop
+import ConcreteSemantics.Tactic.BigStep
 
 /- ## 7.2 Big-Step Semantics
 
@@ -60,15 +60,14 @@ inductive BigStep : Stmt → State → State → Prop where
 -- BigStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep S s t
 
--- BigStep がゴールにある場合にそれを aesop が扱えるようにする
-add_aesop_rules safe [
-  apply BigStep.skip,
-  apply BigStep.assign,
-  apply BigStep.seq,
-  apply BigStep.if_true,
-  apply BigStep.if_false,
-  apply BigStep.while_false]
-add_aesop_rules unsafe 50% [apply BigStep.while_true]
+-- BigStep がゴールにある場合にそれを big_step が扱えるようにする
+add_aesop_rules safe [apply BigStep.skip (rule_sets := [BigStepRules])]
+add_aesop_rules safe [apply BigStep.assign (rule_sets := [BigStepRules])]
+add_aesop_rules safe [apply BigStep.seq (rule_sets := [BigStepRules])]
+add_aesop_rules safe [apply BigStep.if_true (rule_sets := [BigStepRules])]
+add_aesop_rules safe [apply BigStep.if_false (rule_sets := [BigStepRules])]
+add_aesop_rules safe [apply BigStep.while_false (rule_sets := [BigStepRules])]
+add_aesop_rules unsafe 50% [apply BigStep.while_true (rule_sets := [BigStepRules])]
 
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
@@ -82,7 +81,7 @@ example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
   -- 条件式 `x > y` が真であること
   case hcond => simp
 
-  case hbody => aesop
+  case hbody => big_step
 
   case hrest =>
     simp only [gt_iff_lt, ↓reduceIte, Nat.sub_self]
@@ -98,8 +97,8 @@ example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
 /-- `aesop` を使って瞬殺するバージョン -/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
   dsimp [sillyLoop]
-  -- safe としてルールを追加していたら失敗する
-  aesop
+  simp_all only [gt_iff_lt]
+  big_step
 
 /- ### 7.2.2 Deriving IMP Executions -/
 
@@ -111,5 +110,4 @@ def set_to_five : Stmt :=
 example (s : State) : (set_to_five, s) ==> (s["x" ↦ 5]["y" ↦ 5]) := by
   -- set_to_five の定義を展開する
   dsimp [set_to_five]
-
-  aesop
+  big_step

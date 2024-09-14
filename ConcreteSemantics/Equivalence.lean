@@ -52,7 +52,6 @@ theorem while_eq_if_then_skip (B : State → Prop) (S : Stmt) :
   -- 状態 `s, t` が与えられたとする
   intro s t
 
-  -- B が真かどうかで分岐して証明
   rw [while_iff]
   aesop
 
