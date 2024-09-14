@@ -77,35 +77,9 @@ add_aesop_rules safe [
 add_aesop_rules safe [apply BigStep.while_false (rule_sets := [BigStepRules])]
 add_aesop_rules unsafe 50% [apply BigStep.while_true (rule_sets := [BigStepRules])]
 
-/-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。 -/
-example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
-  -- sillyLoop の定義を展開する
-  dsimp [sillyLoop]
-
-  -- 状態が `x ↦ 1, y ↦ 0` なので条件式は真になる。
-  -- したがって while_true の条件を書き下す
-  apply BigStep.while_true
-
-  -- 条件式 `x > y` が真であること
-  case hcond => simp
-
-  case hbody => big_step
-
-  case hrest =>
-    simp only [gt_iff_lt, ↓reduceIte, Nat.sub_self]
-
-    -- 状態が複雑なラムダ式になっているので簡約する
-    conv in if _ = "x" then _ else _ =>
-      tactic => split <;> rfl
-
-    -- このとき状態は `x ↦ 0, y ↦ 0` なので条件式は偽。
-    -- したがって while_false を使う
-    apply BigStep.while_false (hcond := by simp)
-
-/-- `aesop` を使って瞬殺するバージョン -/
+/-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。-/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
   dsimp [sillyLoop]
-  simp_all only [gt_iff_lt]
   big_step
 
 /- ### 7.2.2 Deriving IMP Executions -/
