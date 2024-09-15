@@ -40,6 +40,7 @@ macro_rules
   | `(tactic|unfold ≈) => `(tactic| dsimp only [(· ≈ ·), Setoid.r, equivCmd])
 
 -- big_step が `unfold ≈` を利用できるようにする
+-- これでゴールに `≈` が含まれている場合に対応できる
 add_aesop_rules norm [tactic (by unfold ≈) (rule_sets := [BigStepRules])]
 
 /-- ### Lemma 7.3

@@ -92,7 +92,7 @@ theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
   big_step
 
 /-- while の条件式が真のときの inversion rule -/
-@[simp] theorem while_true_iff {B S s u} (hcond : B s) : (whileDo B S, s) ==> u ↔
+theorem while_true_iff {B S s u} (hcond : B s) : (whileDo B S, s) ==> u ↔
     (∃ t, (S, s) ==> t ∧ (whileDo B S, t) ==> u) := by
   big_step
 
