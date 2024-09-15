@@ -34,10 +34,13 @@ instance : Setoid Stmt where
 -- このように、`Stmt` の要素が同値であることを示すために `≈` を使うことができる
 #check skip ≈ skip
 
-/-- `≈` 記号の中身を展開するタクティク -/
+/-- `≈` 記号の中身を展開するルールを追加する -/
 syntax "unfold" "≈" : tactic
 macro_rules
   | `(tactic|unfold ≈) => `(tactic| dsimp only [(· ≈ ·), Setoid.r, equivCmd])
+
+-- big_step が `unfold ≈` を利用できるようにする
+add_aesop_rules norm [tactic (by unfold ≈) (rule_sets := [BigStepRules])]
 
 /-- ### Lemma 7.3
 `while` 文の意味は、
@@ -45,29 +48,21 @@ macro_rules
 * 条件式が偽なら `skip`
 というコマンドに等しい。 -/
 theorem while_eq_if_then_skip (B : State → Prop) (S : Stmt) :
-  whileDo B S ≈ ifThenElse B (S;; whileDo B S) skip := by
-  -- ≈ の定義を展開する
-  unfold ≈
+    whileDo B S ≈ ifThenElse B (S;; whileDo B S) skip := by
+  big_step
 
-  -- 状態 `s, t` が与えられたとする
-  intro s t
+/-- 排中律に関する補題 -/
+theorem cond_em (B : State → Prop) (s : State) : B s ∨ ¬ B s := by
+  by_cases h : B s
+  · exact Or.inl h
+  · exact Or.inr h
 
-  rw [while_iff]
-  aesop
+add_aesop_rules safe [apply cond_em (rule_sets := [BigStepRules])]
 
 /-- ### Lemma 7.4
 IF 文の両方の分岐が同じコマンド `c` なら、それは `c` と同じ -/
 theorem if_both_eq (B : State → Prop) (c : Stmt) : ifThenElse B c c ≈ c := by
-  -- ≈ の定義を展開する
-  unfold ≈
-
-  -- 状態 `s, t` が与えられたとする
-  intro s t
-
-  -- ifThenElse の定義を展開する
-  rw [if_iff]
-  -- 条件式が成り立つかどうかで場合分けをして証明
-  by_cases h : B s <;> simp_all
+  big_step
 
 /-- ### Lemma 7.6
 `(while b do c, s) ==> t` かつ `c ≈ c` ならば `(while b do c', s) ==> t` -/
