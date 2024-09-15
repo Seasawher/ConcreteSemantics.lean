@@ -65,54 +65,40 @@ add_aesop_rules unsafe 30% [apply and_excluded (rule_sets := [BigStepRules])]
     (B s ∧ (S, s) ==> t) ∨ (¬ B s ∧ (T, s) ==> t) := by
   big_step
 
-/-- while に関する inversion rule。
-条件式が真か偽かで場合分けをする
+/-- while の BigStep が仮定にあるときに簡単な状態の式を導く(条件式が偽のとき) -/
+theorem cases_while_of_false {B S s t} (hcond : ¬ B s) : (whileDo B S, s) ==> t → s = t := by
+  intro h
+  rcases h with h | h
+  · simp_all
+  · rfl
 
-TODO: aesop に自動的に使用してもらう方法を見つける -/
+add_aesop_rules safe [destruct cases_while_of_false (rule_sets := [BigStepRules])]
+
+/-- while の BigStep が仮定にあるときに簡単な状態の式を導く(条件式が真のとき) -/
+theorem cases_while_of_true {B S s u} (hcond : B s) : (whileDo B S, s) ==> u →
+    (∃ t, (S, s) ==> t ∧ (whileDo B S, t) ==> u) := by
+  intro h
+  cases h
+  · aesop
+  · simp_all
+
+-- 再帰的に while 文が出てくるので、unsafe ルールとして登録する
+add_aesop_rules unsafe 20% [apply cases_while_of_true (rule_sets := [BigStepRules])]
+
+/-- while に関する inversion rule。
+条件式が真か偽かで場合分けをする -/
 theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
     (∃ t, B s ∧ (S, s) ==> t ∧ (whileDo B S, t) ==> u) ∨ (¬ B s ∧ u = s) := by
-  constructor <;> intro h
-
-  case mp =>
-    -- 条件式が成り立つかどうかで場合分けする
-    by_cases hcond : B s
-
-    -- 成り立つ場合
-    case pos =>
-      left
-      -- `(whileDo B S,s) ==> u` という仮定を条件式が真ということを使って分解
-      cases h <;> try contradiction
-
-      -- 変数が死ぬが、aesop は rename_i を使ってくれるので通る
-      big_step
-
-    -- 成り立たない場合
-    case neg =>
-      right
-
-      -- 条件式が成立しないことと `(whileDo B S,s) ==> u` という仮定から、
-      -- `u = s` であることがわかる
-      cases h <;> try contradiction
-      simp_all
-
-  case mpr => big_step
+  big_step
 
 /-- while の条件式が真のときの inversion rule -/
 @[simp] theorem while_true_iff {B S s u} (hcond : B s) : (whileDo B S, s) ==> u ↔
     (∃ t, (S, s) ==> t ∧ (whileDo B S, t) ==> u) := by
-  -- 条件式の真偽で場合分けをする
-  rw [while_iff]
-
-  -- 条件式が成り立つ場合のみ残す
-  simp [hcond]
+  big_step
 
 /-- while の条件式が偽のときの inversion rule -/
 @[simp] theorem while_false_iff {B S s t} (hcond : ¬ B s) : (whileDo B S, s) ==> t ↔ t = s := by
-  -- 条件式の真偽で場合分けをする
-  rw [while_iff]
-
-  -- 条件式が成り立たない場合のみ残す
-  simp [hcond]
+  big_step
 
 /- inversion rule を使って次のような命題が証明できる -/
 
