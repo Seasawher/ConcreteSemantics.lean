@@ -7,66 +7,63 @@ import ConcreteSemantics.BigStep
 namespace BigStep
 
 /-- skip に関する BigStep から状態の簡単な式を導く -/
-theorem eq_of_skip {s t : State} : (Stmt.skip, s) ==> t → t = s := by
+theorem cases_of_skip {s t : State} : (Stmt.skip, s) ==> t → t = s := by
   intro h
   cases h
   rfl
 
--- eq_of_skip を使って仮定を言い換える
-add_aesop_rules safe [destruct eq_of_skip (rule_sets := [BigStepRules])]
+-- skip に関する BigStep が仮定にあるときに big_step で扱えるようにする
+add_aesop_rules safe [destruct cases_of_skip (rule_sets := [BigStepRules])]
 
 /-- skip に関する inversion rule -/
 @[simp] theorem skip_iff {s t : State} : (Stmt.skip, s) ==> t ↔ t = s := by
   big_step
 
+/-- seq に関する BigStep から状態の簡単な式を導く -/
+theorem cases_of_seq {S T s u} :
+    (S;; T, s) ==> u → (∃t, (S, s) ==> t ∧ (T, t) ==> u) := by
+  intro h
+  cases h
+  big_step
+
+-- seq に関する BigStep が仮定にあるときに big_step で扱えるようにする
+add_aesop_rules safe [destruct cases_of_seq (rule_sets := [BigStepRules])]
+
 /-- seq に関する inversion rule -/
 @[simp] theorem seq_iff {S T s u} :
     (S;; T, s) ==> u ↔ (∃t, (S, s) ==> t ∧ (T, t) ==> u) := by
-  -- 両方向示す
-  constructor <;> intro h
+  big_step
 
-  -- 左から右を示す
-  case mp =>
-    -- BigStep.seq の定義から仮定を分解する
-    cases h
-    case seq t hS hT =>
-      exists t
+/-- if に関する BigStep から簡単な条件式を導く (条件式が真の場合) -/
+theorem cases_if_of_true {B S T s t} (hcond : B s) : (ifThenElse B S T, s) ==> t → (S, s) ==> t := by
+  intro h
+  cases h <;> try contradiction
+  assumption
 
-  -- 右から左を示す
-  case mpr => big_step
+/-- if に関する BigStep から簡単な条件式を導く (条件式が偽の場合) -/
+theorem cases_if_of_false {B S T s t} (hcond : ¬ B s) : (ifThenElse B S T, s) ==> t → (T, s) ==> t := by
+  intro h
+  cases h <;> try contradiction
+  assumption
 
-/-- if に関する inversion rule (条件式が真の場合) -/
-theorem if_iff_of_true {B S T s t} (hcond : B s) : (ifThenElse B S T, s) ==> t ↔ (S, s) ==> t := by
-  constructor <;> intro h
-  · cases h <;> simp_all
-  · big_step
+-- if に関する BigStep が仮定にあるときに big_step で扱えるようにする
+add_aesop_rules safe [destruct cases_if_of_true (rule_sets := [BigStepRules])]
+add_aesop_rules safe [destruct cases_if_of_false (rule_sets := [BigStepRules])]
 
-add_aesop_rules norm [simp if_iff_of_true (rule_sets := [BigStepRules])]
+/-- ifThenElse の分解時に現れる式を分解するための命題論理の補題 -/
+theorem and_excluded {P Q R : Prop} (hQ : P → Q) (hR : ¬ P → R) : (P ∧ Q ∨ ¬ P ∧ R) := by
+  by_cases h : P
+  · left
+    exact ⟨h, hQ h⟩
+  · right
+    exact ⟨h, hR h⟩
 
-/-- if に関する inversion rule (条件式が偽の場合) -/
-theorem if_iff_of_false {B S T s t} (hcond : ¬ B s) : (ifThenElse B S T, s) ==> t ↔ (T, s) ==> t := by
-  constructor <;> intro h
-  · cases h <;> simp_all
-  · big_step
-
-add_aesop_rules norm [simp if_iff_of_false (rule_sets := [BigStepRules])]
+add_aesop_rules unsafe 30% [apply and_excluded (rule_sets := [BigStepRules])]
 
 /-- if に関する inversion rule -/
 @[simp] theorem if_iff {B S T s t} : (ifThenElse B S T, s) ==> t ↔
     (B s ∧ (S, s) ==> t) ∨ (¬ B s ∧ (T, s) ==> t) := by
-  -- 同値の両方向を示す
-  constructor <;> intro h
-
-  -- 左から右を示す
-  case mp =>
-    -- BigStep.ifThenElse の定義から従う
-    cases h <;> simp_all
-
-  -- 右から左を示す
-  case mpr =>
-    rcases h with ⟨hcond, hbody⟩ | ⟨hcond, hbody⟩
-    · big_step
-    · big_step
+  big_step
 
 /-- while に関する inversion rule。
 条件式が真か偽かで場合分けをする
@@ -83,12 +80,11 @@ theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
     -- 成り立つ場合
     case pos =>
       left
-
       -- `(whileDo B S,s) ==> u` という仮定を条件式が真ということを使って分解
       cases h <;> try contradiction
 
       -- 変数が死ぬが、aesop は rename_i を使ってくれるので通る
-      aesop
+      big_step
 
     -- 成り立たない場合
     case neg =>
@@ -99,11 +95,7 @@ theorem while_iff {B S s u} : (whileDo B S, s) ==> u ↔
       cases h <;> try contradiction
       simp_all
 
-  case mpr =>
-    -- 条件式が成り立つかどうかで場合分けする
-    rcases h with ⟨t, hcond, hbody, hrest⟩ | ⟨hcond, rfl⟩
-    · apply BigStep.while_true hcond hbody hrest
-    · apply BigStep.while_false (hcond := by assumption)
+  case mpr => big_step
 
 /-- while の条件式が真のときの inversion rule -/
 @[simp] theorem while_true_iff {B S s u} (hcond : B s) : (whileDo B S, s) ==> u ↔
