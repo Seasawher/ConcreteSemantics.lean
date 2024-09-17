@@ -39,3 +39,8 @@ export Stmt (skip assign seq ifThenElse whileDo)
 def sillyLoop : Stmt :=
   whileDo (fun s => s "x" > s "y")
     (skip;; assign "x" (fun s => s "x" - 1))
+
+set_option quotPrecheck false in
+
+/-- 状態 `s : State` があったとき、変数 `x` に対してだけ値を更新したものを表す記法 -/
+notation s:70 "[" x:70 "↦" n:70 "]" => (fun v ↦ if v = x then n else s v)

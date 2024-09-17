@@ -5,10 +5,6 @@ import ConcreteSemantics.Tactic.BigStep
 
 ### 7.2.1 Definition
 -/
-set_option quotPrecheck false in
-
-/-- 状態 `s : State` があったとき、変数 `x` に対してだけ値を更新したものを表す記法 -/
-notation s:70 "[" x:70 "↦" n:70 "]" => (fun v ↦ if v = x then n else s v)
 
 /-- BigStep 意味論。操作的意味論の一種。コマンドの実行前と実行後の状態だけを見て中間状態を見ないので big step と呼ばれる。
 * 1つめの引数の `(c, s) : Stmt × State` は、初期状態 `s` のもとでコマンド `c` を実行することに対応。
