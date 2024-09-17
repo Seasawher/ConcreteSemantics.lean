@@ -2,32 +2,39 @@ import ConcreteSemantics.Equivalence
 
 /- ### 7.2.5 Execution in IMP is Deterministic -/
 
+open BigStep
+
 /-- IMP は決定的 -/
 theorem imp_deterministic (S : Stmt) (s t u : State) (ht : (S, s) ==> t) (hu : (S, s) ==> u) : t = u := by
-  induction S generalizing u t s
+  induction ht generalizing u
 
-  -- S が skip の場合
-  case skip =>
-    aesop
+  case skip => big_step
 
-  -- S が assign の場合
-  case assign v a =>
-    cases ht <;> cases hu
+  case seq c c' s₁ t₁ _u₁ _hc _hc' ihc ihc' =>
+    apply ihc'
+    simp only [seq_iff] at hu
+    obtain ⟨t₂, hc₂, hc'₂⟩ := hu
+    have := ihc _ hc₂
+    big_step
+
+  case assign v a s =>
+    cases hu
     simp
 
-  -- S が seq の場合
-  case seq c c' hc hc' =>
-    simp [BigStep.seq_iff] at ht hu
-    rcases ht with ⟨t', ht, ht'⟩
-    rcases hu with ⟨u', hu, hu'⟩
+  case if_true B c _c' s t hcond _hc ih =>
+    big_step
 
-    -- 帰納法の仮定から、`t' = u'` であることがわかる
-    have eq' : t' = u' := by
-      apply hc <;> assumption
-    rw [eq'] at ht' ht
-    clear ht hu eq' hc
+  case if_false B c _c' s t hcond _hc ih =>
+    big_step
 
-    -- 再び帰納法の仮定を使う
-    apply hc' (s := u') <;> assumption
+  case while_true B c s₁ t₁ _u₁ hcond _hbody _hrest ihc ihw =>
+    apply ihw
+    rw [while_true_iff (hcond := hcond)] at hu
+    obtain ⟨t₂, hbody₂, hrest₂⟩ := hu
+    have : t₁ = t₂ := by big_step
+    rw [this]
+    subst this
+    simp_all
 
-  all_goals sorry
+  case while_false B c s hcond =>
+    big_step
