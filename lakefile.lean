@@ -15,6 +15,8 @@ package «concreteSemantics» where
     ⟨`pp.unicode.fun, true⟩
   ]
 
+require mathlib from git "https://github.com/leanprover-community/mathlib4.git"
+
 require aesop from git "https://github.com/leanprover-community/aesop"
 
 @[default_target]
