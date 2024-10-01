@@ -55,12 +55,13 @@ add_aesop_rules safe tactic [
 -- SmallStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" c1:55 "," s1:55 ")" " =>ₛ " "(" c2:55 "," s2:55 ")" => SmallStep c1 s1 c2 s2
 
-
 /-- コマンドと状態を組にしたもの。configuration -/
 abbrev Config := Stmt × State
 
--- /-- SmallStep の二項関係バージョン -/
--- abbrev smallStepBin (conf₁ conf₂ : Config) : Prop := SmallStep conf₁.1 conf₁.2 conf₂.1 conf₂.2
+/-- SmallStep の二項関係バージョン -/
+abbrev smallStepBin (conf₁ conf₂ : Config) : Prop := SmallStep conf₁.1 conf₁.2 conf₂.1 conf₂.2
+
+@[inherit_doc] infix:30 " ⇒ " => smallStepBin
 
 -- add_aesop_rules safe tactic [(by dsimp [smallStepBin]) (rule_sets := [SmallStepRules])]
 
@@ -68,38 +69,26 @@ open Relation
 
 /-- `smallStepBin` という二項関係の反射的推移的閉包 -/
 @[reducible] def smallStepStar : Config → Config → Prop :=
-  ReflTransGen (fun conf₁ conf₂ => SmallStep conf₁.1 conf₁.2 conf₂.1 conf₂.2)
+  ReflTransGen smallStepBin
 
 @[inherit_doc] infix:30 " ⇒* " => smallStepStar
+
+instance : Trans smallStepBin smallStepBin smallStepStar where
+  trans a_b b_c := ReflTransGen.head a_b (ReflTransGen.head b_c .refl)
+instance : Trans smallStepBin smallStepStar smallStepStar where
+  trans a_b b__c := ReflTransGen.head a_b b__c
+instance : Trans smallStepStar smallStepBin smallStepStar where
+  trans a__b b_c := ReflTransGen.tail a__b b_c
 
 #check sillyLoop
 
 example : (sillyLoop, (fun _ => 0)["x" ↦ 1]) ⇒* (skip, (fun _ => 0)) := by
   dsimp [sillyLoop]
-
-  generalize hB : (fun s : State ↦ s "x" > s "y") = B0
-  generalize hS : (skip;; assign "x" (fun s ↦ s "x" - 1)) = S0
-  generalize hs : (fun v ↦ (if v = "x" then 1 else 0)) = s0
-
-  have : (whileDo B0 S0, s0) ⇒* (skip, fun x ↦ 0) := calc
-    _ ⇒* (ifThenElse B0 (S0 ;; whileDo B0 S0) skip, s0) := ?step1
-    _ ⇒* (S0 ;; whileDo B0 S0, s0) := ?step2
-    _ ⇒* (whileDo B0 S0, fun _ ↦ 0) := ?step3
-    _ ⇒* (skip, fun x ↦ 0) := by sorry
-
-  case step1 =>
-    apply ReflTransGen.head (a := (whileDo B0 S0, s0)) (hbc := ReflTransGen.refl)
-    apply SmallStep.whileDo
-
-  case step2 =>
-    apply ReflTransGen.head (a := (ifThenElse B0 (S0 ;; whileDo B0 S0) skip, s0)) (hbc := ReflTransGen.refl)
-    apply SmallStep.if_true
-    rw [← hB, ← hs]
-    simp
-
-  case step3 =>
-    have : (S0,s0) =>ₛ (skip, fun x ↦ 0) := by sorry
-    have := @SmallStep.seq_step (S := S0) (s := s0) (S' := skip) (s' := fun _ ↦ 0)
-    sorry
-
-  sorry
+  calc
+    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
+    _ ⇒ (_, _) := by dsimp [smallStepBin]; apply SmallStep.if_true; simp
+    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
+    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
+    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
+    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
+    _ ⇒ (_, _) := by dsimp [smallStepBin]; apply SmallStep.if_false; simp
