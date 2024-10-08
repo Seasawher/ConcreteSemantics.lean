@@ -53,7 +53,7 @@ add_aesop_rules safe tactic [
 ]
 
 -- SmallStep のための見やすい記法を用意する
-@[inherit_doc] notation:55 "(" c1:55 "," s1:55 ")" " =>ₛ " "(" c2:55 "," s2:55 ")" => SmallStep c1 s1 c2 s2
+@[inherit_doc] notation:55 "(" c1:55 "," s1:55 ")" " ⇒ " "(" c2:55 "," s2:55 ")" => SmallStep c1 s1 c2 s2
 
 /-- コマンドと状態を組にしたもの。configuration -/
 abbrev Config := Stmt × State
@@ -84,6 +84,7 @@ instance : Trans smallStepBin smallStepStar smallStepStar where
 instance : Trans smallStepStar smallStepBin smallStepStar where
   trans a__b b_c := ReflTransGen.tail a__b b_c
 
+/-- The Hitchhiker's guide to logical verification の 9.5 節より引用した例 -/
 example : (sillyLoop, (fun _ => 0)["x" ↦ 1]) ⇒* (skip, (fun _ => 0)) := by
   dsimp [sillyLoop]
   calc
@@ -94,3 +95,29 @@ example : (sillyLoop, (fun _ => 0)["x" ↦ 1]) ⇒* (skip, (fun _ => 0)) := by
     _ ⇒ (_, _) := by small_step
     _ ⇒ (_, _) := by small_step
     _ ⇒ (_, _) := by apply SmallStep.if_false; simp
+
+/-- small step の one-step 評価の決定性 -/
+theorem smallStep_deterministic {S T T' : Stmt} {s t t' : State}
+    (h1 : (S, s) ⇒ (T, t)) (h2 : (S, s) ⇒ (T', t')) : T = T' ∧ t = t' := by
+  induction h1 generalizing t' T'
+
+  case assign x S₁ s₁ => cases h2; simp
+  case seq_step S₁ T₁ S₂ s₁ s₂ hT₁ ih =>
+    cases h2
+    case seq_skip => cases hT₁
+    case seq_step T₂ hT₂ =>
+      have ih₂ := ih hT₂
+      small_step
+  case seq_skip S₁ s₁ =>
+    cases h2
+    case seq_skip => simp
+    case seq_step T hT => cases hT
+  case if_true B S₁ T₁ s₁ hcond =>
+    cases h2; simp
+    case if_false => contradiction
+  case if_false B S₁ T₁ s₁ hcond =>
+    cases h2
+    case if_true => contradiction
+    simp
+  case whileDo => cases h2; simp
+
