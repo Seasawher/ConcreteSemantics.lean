@@ -61,9 +61,12 @@ abbrev Config := Stmt × State
 /-- SmallStep の二項関係バージョン -/
 abbrev smallStepBin (conf₁ conf₂ : Config) : Prop := SmallStep conf₁.1 conf₁.2 conf₂.1 conf₂.2
 
-@[inherit_doc] infix:30 " ⇒ " => smallStepBin
+add_aesop_rules safe tactic [
+  (by dsimp [smallStepBin] at *)
+  (rule_sets := [SmallStepRules])
+]
 
--- add_aesop_rules safe tactic [(by dsimp [smallStepBin]) (rule_sets := [SmallStepRules])]
+@[inherit_doc] infix:30 " ⇒ " => smallStepBin
 
 open Relation
 
@@ -73,6 +76,7 @@ open Relation
 
 @[inherit_doc] infix:30 " ⇒* " => smallStepStar
 
+-- calc が使えるようにする
 instance : Trans smallStepBin smallStepBin smallStepStar where
   trans a_b b_c := ReflTransGen.head a_b (ReflTransGen.head b_c .refl)
 instance : Trans smallStepBin smallStepStar smallStepStar where
@@ -80,15 +84,13 @@ instance : Trans smallStepBin smallStepStar smallStepStar where
 instance : Trans smallStepStar smallStepBin smallStepStar where
   trans a__b b_c := ReflTransGen.tail a__b b_c
 
-#check sillyLoop
-
 example : (sillyLoop, (fun _ => 0)["x" ↦ 1]) ⇒* (skip, (fun _ => 0)) := by
   dsimp [sillyLoop]
   calc
-    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
-    _ ⇒ (_, _) := by dsimp [smallStepBin]; apply SmallStep.if_true; simp
-    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
-    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
-    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
-    _ ⇒ (_, _) := by dsimp [smallStepBin]; small_step
-    _ ⇒ (_, _) := by dsimp [smallStepBin]; apply SmallStep.if_false; simp
+    _ ⇒ (_, _) := by small_step
+    _ ⇒ (_, _) := by apply SmallStep.if_true; simp
+    _ ⇒ (_, _) := by small_step
+    _ ⇒ (_, _) := by small_step
+    _ ⇒ (_, _) := by small_step
+    _ ⇒ (_, _) := by small_step
+    _ ⇒ (_, _) := by apply SmallStep.if_false; simp
