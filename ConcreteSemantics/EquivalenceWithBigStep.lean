@@ -3,7 +3,6 @@ BigStep 意味論を、SmallStep に翻訳できる。
 -/
 import ConcreteSemantics.BigStep
 import ConcreteSemantics.SmallStep
-import Mathlib.Tactic
 
 open Relation
 
@@ -23,11 +22,10 @@ theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) 
       _ ⇒* (_, _) := by small_step
 
     case step1 =>
-      set ct := (skip, t₁) with hcs
+      generalize hct : (skip, t₁) = ct
+      rw [hct] at hS_ih
       induction hS_ih
-      case refl => rfl
+      case refl => sorry
       case tail _ _ _ =>
-
         sorry
-      -- apply SmallStep.seq_step (hS := hS₁)
   sorry
