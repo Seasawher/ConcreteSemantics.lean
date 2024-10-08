@@ -28,4 +28,4 @@ theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) 
       case refl => sorry
       case tail _ _ _ =>
         sorry
-  sorry
+  all_goals sorry
