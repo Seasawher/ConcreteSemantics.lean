@@ -62,6 +62,7 @@ theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) 
     _ ⇒ (skip, s) := by small_step
     _ ⇒* (skip, s) := by rfl
 
+/-- TODO: lemma 7.13のあとにやる -/
 theorem small_step_star_to_big_step {S : Stmt} {s t : State} (h : (S, s) ⇒* (skip, t)) : (S, s) ==> t := by
   -- induction時のエラーを避けるため、一時的に(S₁, s₁)を変数csに一般化する
   generalize hcs : (S, s) = cs at h
