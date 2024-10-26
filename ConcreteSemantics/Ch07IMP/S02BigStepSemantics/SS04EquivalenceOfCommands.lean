@@ -1,7 +1,5 @@
+import ConcreteSemantics.Ch07IMP.S02BigStepSemantics.SS03RuleInversion
 /- ### 7.2.4 Equivalence of Commands -/
-import ConcreteSemantics.Stmt
-import ConcreteSemantics.BigStep
-import ConcreteSemantics.RuleInversion
 
 namespace BigStep
 
@@ -179,7 +177,5 @@ theorem if_congr {B : State → Prop} {S1 S2 T1 T2 : Stmt} (hS : S1 ≈ S2) (hT 
     case if_false hcond hbody =>
       apply BigStep.if_false hcond
       rwa [hT]
-
-
 
 end BigStep

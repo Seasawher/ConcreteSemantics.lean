@@ -1,4 +1,4 @@
-import ConcreteSemantics.Equivalence
+import ConcreteSemantics.Ch07IMP.S02BigStepSemantics.SS04EquivalenceOfCommands
 
 /- ### 7.2.5 Execution in IMP is Deterministic -/
 
