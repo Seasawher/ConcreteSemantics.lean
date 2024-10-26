@@ -1,4 +1,4 @@
-import ConcreteSemantics.BigStep
+import ConcreteSemantics.Ch07IMP.S02BigStepSemantics.SS02DerivingIMPExecutions
 
 /- ### 7.2.3 Rule Inversion
 逆向きの推論ルールを与えることができる。

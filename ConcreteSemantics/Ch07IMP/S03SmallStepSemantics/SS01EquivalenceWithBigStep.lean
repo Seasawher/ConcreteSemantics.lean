@@ -1,8 +1,7 @@
 /- ### 7.3.1 Equivalence with Big-Step Semantics
 BigStep 意味論を、SmallStep に翻訳できる。
 -/
-import ConcreteSemantics.BigStep
-import ConcreteSemantics.SmallStep
+import ConcreteSemantics.Ch07IMP.S03SmallStepSemantics.SS00Basic
 
 open Relation
 
