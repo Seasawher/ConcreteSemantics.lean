@@ -5,33 +5,23 @@ import ConcreteSemantics.Ch07IMP.S03SmallStepSemantics.SS00Basic
 
 open Relation
 
-/-- BigStep と SmallStep の等価性を示す際に使う補題 -/
-theorem smallStepStar_skip_seq
-  {S s t T}
-  (hS : (S, s) ⇒* (skip, t))
-  : (S ;; T, s) ⇒* (skip;; T, t) := by
-  -- hS を `S = skip` のケースと `(S, s) ⇒ (S', s') ∧ (S', s') ⇒* (skip, t)` のケースに分けて考える
+/-- Lemma 7.13: Lemma 7.12 で使う補題 -/
+theorem smallStepStar_seq
+  {c1 s1 c s2 c2}
+  (h : (c1, s1) ⇒* (c, s2))
+  : (c1 ;; c2, s1) ⇒* (c;; c2, s2) := by
+  -- induction時のエラーを避けるため、一時的に(c1, s1)を変数cs1に一般化する
+  generalize hcs : (c1, s1) = cs1 at h
 
-  -- induction時のエラーを避けるため、一時的に(S₁, s₁)を変数csに一般化する
-  generalize hcs : (S, s) = cs at hS
-
-  -- tail ではなく head の方を使う
-  induction hS using ReflTransGen.head_induction_on generalizing S s
-  case refl => simp_all; rfl
-  case head _ «S', s'» hS₂ _ ih =>
-    -- 一時的に置いた変数を消す
-    simp [← hcs] at *; clear hcs
-
-    -- Config を Stmt と State にバラす
-    rcases «S', s'» with ⟨S', s'⟩
-
-    specialize ih rfl
-
+  induction h using ReflTransGen.head_induction_on generalizing c1 s1
+  case refl => aesop
+  case head «c1, s1» «c1', s1'» h1 h2 ih =>
+    rcases «c1', s1'» with ⟨c1', s1'⟩
     calc
-      _ ⇒ (S';; T, s') := by small_step
-      _ ⇒* (skip;; T, t) := by apply ih
+      _ ⇒ (c1';; c2, s1') := by small_step
+      _ ⇒* (c;; c2, s2) := by apply ih; rfl
 
-/-- BigStep 意味論の式を、SmallStep star に翻訳することができる。 -/
+/-- Lemma 7.12: BigStep 意味論の式を、SmallStep star に翻訳することができる。 -/
 theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) : (S, s) ⇒* (skip, t) := by
   induction h
   case skip =>
@@ -41,7 +31,7 @@ theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) 
       _ ⇒ (_, _) := by small_step
       _ ⇒* (_, _) := by rfl
   case seq S₁ T s₁ t₁ u₁ _hS₁ _hT hS_ih hT_ih => calc
-    (S₁;; T, s₁) ⇒* (skip;; T, t₁) := smallStepStar_skip_seq hS_ih
+    (S₁;; T, s₁) ⇒* (skip;; T, t₁) := smallStepStar_seq hS_ih
     _ ⇒ (T, t₁) := by small_step
     _ ⇒* (skip, u₁) := hT_ih
   case if_true B s t hCond S T _h ih => calc
@@ -53,7 +43,7 @@ theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) 
   case while_true B S s t u hCond _h₁ _h₂ ih₁ ih₂ => calc
     _ ⇒ (ifThenElse B (S ;; whileDo B S) skip, s) := by small_step
     _ ⇒ (S ;; whileDo B S, s) := by small_step
-    _ ⇒* (skip ;; whileDo B S, t) := smallStepStar_skip_seq ih₁
+    _ ⇒* (skip ;; whileDo B S, t) := smallStepStar_seq ih₁
     _ ⇒ (whileDo B S, t) := by small_step
     _ ⇒* (skip, u) := ih₂
   case while_false B S s hCond => calc
@@ -61,7 +51,22 @@ theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) 
     _ ⇒ (skip, s) := by small_step
     _ ⇒* (skip, s) := by rfl
 
-/-- TODO: lemma 7.13のあとにやる -/
+/-- Lemma 7.15: Lemma 7.14 の seq_stepのケース. -/
+theorem small_step_star_to_big_step.seq_step {c s c' s' t} (h1 : (c, s) ⇒ (c', s')) (h2: (c', s') ==> t) : (c, s) ==> t := by
+  induction h1
+  case seq_skip => big_step
+  case if_true => big_step
+  case if_false => big_step
+  case assign => cases h2; big_step
+  case seq_step =>
+    sorry
+  case whileDo =>
+    sorry
+
+-- [[cs → cs 0
+-- ; cs 0 ⇒ t]] =⇒ cs ⇒ t
+
+/-- Lemma 7.14: SmallStep star 意味論の式を、BigStep に翻訳することができる。 -/
 theorem small_step_star_to_big_step {S : Stmt} {s t : State} (h : (S, s) ⇒* (skip, t)) : (S, s) ==> t := by
   -- induction時のエラーを避けるため、一時的に(S₁, s₁)を変数csに一般化する
   generalize hcs : (S, s) = cs at h
