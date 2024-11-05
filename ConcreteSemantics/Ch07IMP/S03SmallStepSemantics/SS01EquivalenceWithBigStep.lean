@@ -52,22 +52,19 @@ theorem big_step_to_small_step_star {S : Stmt} {s t : State} (h : (S, s) ==> t) 
     _ ⇒* (skip, s) := by rfl
 
 /-- Lemma 7.15: Lemma 7.14 の seq_stepのケース. -/
-theorem small_step_star_to_big_step.seq_step {c s c' s' t} (h1 : (c, s) ⇒ (c', s')) (h2: (c', s') ==> t) : (c, s) ==> t := by
-  induction h1
-  case seq_skip => big_step
-  case if_true => big_step
-  case if_false => big_step
-  case assign => cases h2; big_step
-  case seq_step =>
-    sorry
-  case whileDo =>
-    sorry
-
--- [[cs → cs 0
--- ; cs 0 ⇒ t]] =⇒ cs ⇒ t
+theorem small_step_star_to_big_step.seq_step {c s c' s' t}
+  (h1 : (c, s) ⇒ (c', s'))
+  (h2: (c', s') ==> t)
+  : (c, s) ==> t := by
+  induction h1 generalizing t
+  case seq_step => big_step
+    -- rcases h2 with ⟨t', hS', hT'⟩ -- ← これで分解できないのが不思議
+  all_goals big_step
 
 /-- Lemma 7.14: SmallStep star 意味論の式を、BigStep に翻訳することができる。 -/
-theorem small_step_star_to_big_step {S : Stmt} {s t : State} (h : (S, s) ⇒* (skip, t)) : (S, s) ==> t := by
+theorem small_step_star_to_big_step {S : Stmt} {s t : State}
+  (h : (S, s) ⇒* (skip, t))
+  : (S, s) ==> t := by
   -- induction時のエラーを避けるため、一時的に(S₁, s₁)を変数csに一般化する
   generalize hcs : (S, s) = cs at h
 
@@ -86,7 +83,16 @@ theorem small_step_star_to_big_step {S : Stmt} {s t : State} (h : (S, s) ⇒* (s
     case assign => cases ih; big_step
     case seq_step S S' T h₁ =>
       simp at h₁
-      -- `h₁ : (S,s) ⇒ (S',s')` と `ih : (S';; T,s') ==> t` から `(S;; T,s) ==> t` を示す補題がいるかも
-      sorry
+      apply small_step_star_to_big_step.seq_step (h2 := ih)
+      small_step
+    case seq_skip => simpa
+    case if_true => simp_all only [BigStep.if_iff, and_self, not_true_eq_false, false_and, or_false]
+    case if_false => simp_all only [BigStep.if_iff, false_and, not_false_eq_true, and_self, or_true]
+    case whileDo B S => rwa [BigStep.while_eq_if_then_skip]
 
-    all_goals sorry
+/-- Corollary 7.16: BigStepとSmallStepStarの同値性 -/
+theorem big_step_iff_small_step_star {c s t}
+  : (c, s) ==> t ↔ (c, s) ⇒* (skip, t) := by
+  constructor
+  · apply big_step_to_small_step_star
+  · apply small_step_star_to_big_step
