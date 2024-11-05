@@ -57,8 +57,10 @@ theorem small_step_star_to_big_step.seq_step {c s c' s' t}
   (h2: (c', s') ==> t)
   : (c, s) ==> t := by
   induction h1 generalizing t
-  case seq_step => big_step
-    -- rcases h2 with ⟨t', hS', hT'⟩ -- ← これで分解できないのが不思議
+  case seq_step =>
+    -- TODO: rcases のバグではないか。確かめる。
+    -- rcases h2 with ⟨t', hS', hT', s2, s3, s4⟩
+    big_step
   all_goals big_step
 
 /-- Lemma 7.14: SmallStep star 意味論の式を、BigStep に翻訳することができる。 -/
@@ -86,8 +88,8 @@ theorem small_step_star_to_big_step {S : Stmt} {s t : State}
       apply small_step_star_to_big_step.seq_step (h2 := ih)
       small_step
     case seq_skip => simpa
-    case if_true => simp_all only [BigStep.if_iff, and_self, not_true_eq_false, false_and, or_false]
-    case if_false => simp_all only [BigStep.if_iff, false_and, not_false_eq_true, and_self, or_true]
+    case if_true => simp_all
+    case if_false => simp_all
     case whileDo B S => rwa [BigStep.while_eq_if_then_skip]
 
 /-- Corollary 7.16: BigStepとSmallStepStarの同値性 -/
