@@ -60,7 +60,10 @@ theorem and_excluded {P Q R : Prop} (hQ : P → Q) (hR : ¬ P → R) : (P ∧ Q 
 
 add_aesop_rules unsafe 30% [apply and_excluded (rule_sets := [BigStepRules])]
 
-/-- if に関する inversion rule -/
+/-- if に関する inversion rule
+
+TODO: sorry を使用している！！
+-/
 @[simp] theorem if_iff {B S T s t} : (ifThenElse B S T, s) ==> t ↔
     (B s ∧ (S, s) ==> t) ∨ (¬ B s ∧ (T, s) ==> t) := by
   big_step

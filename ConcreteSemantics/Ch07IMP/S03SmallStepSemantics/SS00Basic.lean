@@ -74,7 +74,7 @@ open Relation
 @[reducible] def smallStepStar : Config → Config → Prop :=
   ReflTransGen smallStepBin
 
-@[inherit_doc] infix:30 " ⇒* " => smallStepStar
+@[inherit_doc] infix:40 " ⇒* " => smallStepStar
 
 -- calc が使えるようにする
 instance : Trans smallStepBin smallStepBin smallStepStar where
