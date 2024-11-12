@@ -130,10 +130,8 @@ theorem seq_congr {S1 S2 T1 T2 : Stmt} (hS : S1 ≈ S2) (hT : T1 ≈ T2) : S1 ;;
     case seq t hS' hT' =>
       -- 仮定を使って証明する
       apply BigStep.seq
-      · rw [← hS]
-        assumption
-      · rw [← hT]
-        assumption
+      · rwa [← hS]
+      · rwa [← hT]
 
   case mpr =>
     -- seq_iff の定義から仮定を分解する
@@ -141,10 +139,8 @@ theorem seq_congr {S1 S2 T1 T2 : Stmt} (hS : S1 ≈ S2) (hT : T1 ≈ T2) : S1 ;;
     case seq t hS' hT' =>
       -- 仮定を使って証明する
       apply BigStep.seq
-      · rw [hS]
-        assumption
-      · rw [hT]
-        assumption
+      · rwa [hS]
+      · rwa [hT]
 
 /-- IF に関する congruence rule -/
 theorem if_congr {B : State → Prop} {S1 S2 T1 T2 : Stmt} (hS : S1 ≈ S2) (hT : T1 ≈ T2) :
