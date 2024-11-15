@@ -39,7 +39,7 @@ macro_rules
 
 -- big_step が `unfold ≈` を利用できるようにする
 -- これでゴールに `≈` が含まれている場合に対応できる
-add_aesop_rules norm [tactic (by unfold ≈) (rule_sets := [BigStepRules])]
+add_big_step_rules norm [tactic (by unfold ≈)]
 
 /-- ### Lemma 7.3
 `while` 文の意味は、
@@ -56,7 +56,7 @@ theorem cond_em (B : State → Prop) (s : State) : B s ∨ ¬ B s := by
   · exact Or.inl h
   · exact Or.inr h
 
-add_aesop_rules safe [apply cond_em (rule_sets := [BigStepRules])]
+add_big_step_rules safe [apply cond_em]
 
 /-- ### Lemma 7.4
 IF 文の両方の分岐が同じコマンド `c` なら、それは `c` と同じ -/

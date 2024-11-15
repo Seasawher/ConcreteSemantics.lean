@@ -13,7 +13,7 @@ theorem cases_of_skip {s t : State} : (Stmt.skip, s) ==> t → t = s := by
   rfl
 
 -- skip に関する BigStep が仮定にあるときに big_step で扱えるようにする
-add_aesop_rules safe [destruct cases_of_skip (rule_sets := [BigStepRules])]
+add_big_step_rules safe destruct [cases_of_skip]
 
 /-- skip に関する inversion rule -/
 @[simp] theorem skip_iff {s t : State} : (Stmt.skip, s) ==> t ↔ t = s := by
@@ -27,7 +27,7 @@ theorem cases_of_seq {S T s u} :
   big_step
 
 -- seq に関する BigStep が仮定にあるときに big_step で扱えるようにする
-add_aesop_rules safe [destruct cases_of_seq (rule_sets := [BigStepRules])]
+add_big_step_rules safe destruct [cases_of_seq]
 
 /-- seq に関する inversion rule -/
 @[simp] theorem seq_iff {S T s u} :
@@ -47,8 +47,8 @@ theorem cases_if_of_false {B S T s t} (hcond : ¬ B s) : (ifThenElse B S T, s) =
   assumption
 
 -- if に関する BigStep が仮定にあるときに big_step で扱えるようにする
-add_aesop_rules safe [destruct cases_if_of_true (rule_sets := [BigStepRules])]
-add_aesop_rules safe [destruct cases_if_of_false (rule_sets := [BigStepRules])]
+add_big_step_rules safe destruct [cases_if_of_true]
+add_big_step_rules safe destruct [cases_if_of_false]
 
 /-- ifThenElse の分解時に現れる式を分解するための命題論理の補題 -/
 theorem and_excluded {P Q R : Prop} (hQ : P → Q) (hR : ¬ P → R) : (P ∧ Q ∨ ¬ P ∧ R) := by
@@ -58,7 +58,7 @@ theorem and_excluded {P Q R : Prop} (hQ : P → Q) (hR : ¬ P → R) : (P ∧ Q 
   · right
     exact ⟨h, hR h⟩
 
-add_aesop_rules unsafe 30% [apply and_excluded (rule_sets := [BigStepRules])]
+add_big_step_rules unsafe 30% apply [and_excluded]
 
 /-- if に関する inversion rule
 
@@ -75,7 +75,7 @@ theorem cases_while_of_false {B S s t} (hcond : ¬ B s) : (whileDo B S, s) ==> t
   · simp_all
   · rfl
 
-add_aesop_rules safe [destruct cases_while_of_false (rule_sets := [BigStepRules])]
+add_big_step_rules safe [destruct cases_while_of_false (rule_sets := [BigStepRules])]
 
 /-- while の BigStep が仮定にあるときに簡単な状態の式を導く(条件式が真のとき) -/
 theorem cases_while_of_true {B S s u} (hcond : B s) : (whileDo B S, s) ==> u →
@@ -86,7 +86,7 @@ theorem cases_while_of_true {B S s u} (hcond : B s) : (whileDo B S, s) ==> u →
   · simp_all
 
 -- 再帰的に while 文が出てくるので、unsafe ルールとして登録する
-add_aesop_rules unsafe 20% [apply cases_while_of_true (rule_sets := [BigStepRules])]
+add_big_step_rules unsafe 20% [apply cases_while_of_true (rule_sets := [BigStepRules])]
 
 /-- while に関する inversion rule。
 条件式が真か偽かで場合分けをする -/

@@ -16,5 +16,9 @@ macro "big_step?" : tactic => `(tactic| aesop? (rule_sets := [BigStepRules]))
 
 open Lean Parser Category
 
--- macro "add_big_step_rules" e:Aesop.rule_expr : command =>
---   `(add_aesop_rules $e )
+-- macro "big_step" e:Aesop.rule_expr : attr =>
+--   `(attr| aesop (rule_sets := [BigStepRules]) $e)
+
+/-- `big_step` タクティク用のルールを追加する -/
+macro "add_big_step_rules" e:Aesop.rule_expr : command =>
+  `(command| add_aesop_rules (rule_sets := [BigStepRules]) $e)

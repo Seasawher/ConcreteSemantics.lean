@@ -57,21 +57,17 @@ inductive BigStep : Stmt → State → State → Prop where
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep S s t
 
 -- BigStep がゴールにある場合にそれを big_step が扱えるようにする
-add_aesop_rules safe [apply BigStep.skip (rule_sets := [BigStepRules])]
-add_aesop_rules safe [apply BigStep.assign (rule_sets := [BigStepRules])]
-add_aesop_rules safe [apply BigStep.seq (rule_sets := [BigStepRules])]
-add_aesop_rules safe [
-  tactic
+add_big_step_rules safe [apply BigStep.skip]
+add_big_step_rules safe [apply BigStep.assign]
+add_big_step_rules safe [apply BigStep.seq]
+add_big_step_rules safe tactic [
   (by apply BigStep.if_true (hcond := by assumption) (hbody := by assumption))
-  (rule_sets := [BigStepRules]),
 ]
-add_aesop_rules safe [
-  tactic
+add_big_step_rules safe tactic [
   (by apply BigStep.if_false (hcond := by assumption) (hbody := by assumption))
-  (rule_sets := [BigStepRules]),
 ]
-add_aesop_rules safe [apply BigStep.while_false (rule_sets := [BigStepRules])]
-add_aesop_rules unsafe 50% [apply BigStep.while_true (rule_sets := [BigStepRules])]
+add_big_step_rules safe apply [BigStep.while_false]
+add_big_step_rules unsafe 50% apply [BigStep.while_true]
 
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。-/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
