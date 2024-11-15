@@ -38,18 +38,17 @@ inductive SmallStep : Stmt → State → Stmt → State → Prop
 set_option linter.unusedTactic false
 
 -- `small_step` タクティクにコンストラクタを登録する
-add_aesop_rules safe apply [
+add_aesop_rules safe apply (rule_sets := [SmallStepRules]) [
   SmallStep.assign,
   SmallStep.seq_skip,
-  SmallStep.whileDo (rule_sets := [SmallStepRules])
+  SmallStep.whileDo
 ]
-add_aesop_rules unsafe 70% apply [
-  SmallStep.seq_step (rule_sets := [SmallStepRules])
+add_aesop_rules unsafe 70% apply (rule_sets := [SmallStepRules]) [
+  SmallStep.seq_step
 ]
-add_aesop_rules safe tactic [
+add_aesop_rules safe tactic (rule_sets := [SmallStepRules]) [
   (by apply SmallStep.if_true (hcond := by assumption)),
   (by apply SmallStep.if_false (hcond := by assumption))
-  (rule_sets := [SmallStepRules])
 ]
 
 -- SmallStep のための見やすい記法を用意する
@@ -61,9 +60,8 @@ abbrev Config := Stmt × State
 /-- SmallStep の二項関係バージョン -/
 abbrev smallStepBin (conf₁ conf₂ : Config) : Prop := SmallStep conf₁.1 conf₁.2 conf₂.1 conf₂.2
 
-add_aesop_rules safe tactic [
+add_aesop_rules safe tactic (rule_sets := [SmallStepRules]) [
   (by dsimp [smallStepBin] at *)
-  (rule_sets := [SmallStepRules])
 ]
 
 @[inherit_doc] infix:30 " ⇒ " => smallStepBin

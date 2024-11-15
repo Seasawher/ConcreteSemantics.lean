@@ -57,7 +57,7 @@ theorem skip_of_final {S : Stmt} {s : State} (h : final S s) : S = skip := by
     have := not_final_of_ne_skip if_skip s
     aesop
 
-add_aesop_rules safe destruct [skip_of_final (rule_sets := [SmallStepRules])]
+add_aesop_rules safe destruct (rule_sets := [SmallStepRules]) [skip_of_final]
 
 /-- ### Lemma 7.17
 `final` が成り立つことと、コマンドが `skip` であることは同値。
