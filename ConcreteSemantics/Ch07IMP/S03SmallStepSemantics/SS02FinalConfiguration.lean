@@ -34,14 +34,7 @@ theorem not_final_of_ne_skip {S : Stmt} (h : S ≠ skip) (s : State) : ∃ S' s'
     clear h
     by_cases h : B s
     · small_step
-    · -- TODO: `aesop` タクティクのバグなのか、途中で `sorryAx` を使用してしまう。
-      -- `SmallStep.if_false` を使うべきところで `if_true` を使用してしまう。
-      -- 原因を調査したい。
-      -- small_step
-      simp_all only [ne_eq]
-      apply Exists.intro
-      apply Exists.intro
-      apply SmallStep.if_false (hcond := by assumption)
+    · small_step
   case whileDo B S ih =>
     clear h
     small_step
