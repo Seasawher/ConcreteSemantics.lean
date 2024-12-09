@@ -14,5 +14,5 @@ macro "small_step" : tactic => do `(tactic| aesop (rule_sets := [SmallStepRules]
 macro "small_step?" : tactic => `(tactic| aesop? (rule_sets := [SmallStepRules]))
 
 /-- `small_step` タクティク用のルールを追加する -/
-macro "add_small_step_rules" e:Aesop.rule_expr : command =>
-  `(command| add_aesop_rules (rule_sets := [SmallStepRules]) $e)
+macro attrKind:attrKind "add_small_step_rules" e:Aesop.rule_expr : command =>
+  `(command| $attrKind:attrKind add_aesop_rules (rule_sets := [SmallStepRules]) $e)
