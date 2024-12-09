@@ -37,6 +37,8 @@ syntax "unfold" "≈" : tactic
 macro_rules
   | `(tactic|unfold ≈) => `(tactic| dsimp only [(· ≈ ·), Setoid.r, equivCmd])
 
+set_option linter.unreachableTactic false in
+
 -- big_step が `unfold ≈` を利用できるようにする
 -- これでゴールに `≈` が含まれている場合に対応できる
 add_big_step_rules norm [tactic (by unfold ≈)]

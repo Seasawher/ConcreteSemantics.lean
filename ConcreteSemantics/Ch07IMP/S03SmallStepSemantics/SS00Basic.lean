@@ -35,7 +35,9 @@ inductive SmallStep : Stmt → State → Stmt → State → Prop
   | protected whileDo {B S s} :
     SmallStep (whileDo B S) s (ifThenElse B (S ;; whileDo B S) skip) s
 
+section
 set_option linter.unusedTactic false
+set_option linter.unreachableTactic false
 
 -- `small_step` タクティクにコンストラクタを登録する
 add_small_step_rules safe apply [
@@ -50,6 +52,7 @@ add_small_step_rules safe tactic [
   (by apply SmallStep.if_true (hcond := by assumption)),
   (by apply SmallStep.if_false (hcond := by assumption))
 ]
+end
 
 -- SmallStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" c1:55 "," s1:55 ")" " ⇒ " "(" c2:55 "," s2:55 ")" => SmallStep c1 s1 c2 s2
@@ -60,9 +63,14 @@ abbrev Config := Stmt × State
 /-- SmallStep の二項関係バージョン -/
 abbrev smallStepBin (conf₁ conf₂ : Config) : Prop := SmallStep conf₁.1 conf₁.2 conf₂.1 conf₂.2
 
+section
+set_option linter.unreachableTactic false
+set_option linter.unusedTactic false
+
 add_small_step_rules safe tactic [
   (by dsimp [smallStepBin] at *)
 ]
+end
 
 @[inherit_doc] infix:30 " ⇒ " => smallStepBin
 

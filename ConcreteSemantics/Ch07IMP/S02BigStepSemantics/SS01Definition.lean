@@ -56,6 +56,10 @@ inductive BigStep : Stmt → State → State → Prop where
 -- BigStep のための見やすい記法を用意する
 @[inherit_doc] notation:55 "(" S:55 "," s:55 ")" " ==> " t:55 => BigStep S s t
 
+section
+
+set_option linter.unreachableTactic false
+
 -- BigStep がゴールにある場合にそれを big_step が扱えるようにする
 add_big_step_rules safe [apply BigStep.skip]
 add_big_step_rules safe [apply BigStep.assign]
@@ -68,6 +72,8 @@ add_big_step_rules safe tactic [
 ]
 add_big_step_rules safe apply [BigStep.while_false]
 add_big_step_rules unsafe 50% apply [BigStep.while_true]
+
+end
 
 /-- `sillyLoop` コマンドにより、`x = 1, y = 0` という状態は `x = y = 0` という状態に変わる。-/
 example : (sillyLoop, (fun _ ↦ 0)["x" ↦ 1]) ==> (fun _ ↦ 0) := by
