@@ -65,4 +65,4 @@ BigStep と SmallStep の関係を表す命題を final で書き換えたもの
 -/
 theorem big_step_iff_final (S : Stmt) (s : State) :
     (∃ t, (S, s) ==> t) ↔ (∃ S' s', (S, s) ⇒* (S', s') ∧ final S' s') := by
-  sorry
+  simp [skip_iff_final, big_step_iff_small_step_star]
