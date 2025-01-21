@@ -64,6 +64,7 @@ inductive Instr where
   | Jmpless (n : Int)
   /-- スタックの一番上とその下を比較し、二つ目の方が大きいか等しければ ジャンプする -/
   | Jmpge (n : Int)
+  deriving Inhabited
 
 /-- スタック -/
 abbrev Stack := List Val
@@ -89,3 +90,51 @@ def iexec : Instr → Config → Config
   | .Jmpge n, (i, s, hd :: hd₂ :: stk) =>
     (if hd ≤ hd₂ then i + 1 + n else i + 1, s, stk)
   | .Jmpge _, _ => panic! "スタックの数が2個未満だった (Jmpge命令)"
+
+/-- プログラムPと機械状態cにおいて, `iexec` を1回実行すると状態が c' に遷移する -/
+def exec1 (P : List Instr) (c c' : Config) : Prop :=
+  ∃ (i : Fin P.length) (s : State) (stk : Stack), c = (↑i, s, stk) ∧ c' = iexec P[i] c
+
+@[inherit_doc]
+notation P " ⊢ " c:100 " → " c' => exec1 P c c'
+
+/-- exec1 の反射的推移的閉包 -/
+inductive ExecStar : List Instr → Config → Config → Prop
+  /-- 反射的 -/
+  | refl (P : List Instr) (c : Config) : ExecStar P c c
+  /-- 推移的 -/
+  | step {P c c' c''} (h₁ : P ⊢ c → c') (h₂ : ExecStar P c' c'') : ExecStar P c c''
+
+@[inherit_doc]
+notation P " ⊢ " c:100 " →* " c' => ExecStar P c c'
+
+-- TODO: Transのインスタンスを作成したいが, 二項関係に対してしか使えないので一旦保留
+
+/-- すぐ下のexampleで使うプログラム -/
+def exampleP : List Instr := [.Load "y", .Store "x"]
+/-- すぐ下のexampleで使うState -/
+def exampleS : State := fun x => if x = "x" then 3 else if x = "y" then 4 else 0
+
+example : ∃ i t stk, exampleP ⊢ (0, exampleS, []) →* (i, t, stk) := by
+  dsimp [exampleP, exampleS]
+  let s' : State := fun x => if x = "x" then 4 else if x = "y" then 4 else 0
+  exists 2, s', []
+  apply ExecStar.step (c' := (1, exampleS, [4]))
+  case h₁ =>
+    dsimp [exec1]
+    exists 0, exampleS, []
+  case h₂ =>
+    apply ExecStar.step (c' := (2, s', []))
+    case h₁ =>
+      dsimp [exec1]
+      exists 1, exampleS, [4]
+      constructor
+      · rfl
+      · dsimp [iexec]
+        congr
+        simp [exampleS, s']
+        funext x
+        split <;> (try split)
+        all_goals rfl
+    case h₂ =>
+      apply ExecStar.refl
