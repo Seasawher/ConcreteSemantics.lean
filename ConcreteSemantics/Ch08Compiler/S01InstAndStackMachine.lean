@@ -39,7 +39,7 @@ example (i : Int) (pos : i ≥ 0)
       simp [show ys[n - xs.length]? = none from by simp_all]
     case pos =>
       simp at h
-      have := List.getElem?_append_right (l₁ := xs) (l₂ := ys) (n := n) h
+      have := List.getElem?_append_right (l₁ := xs) (l₂ := ys) (i := n) h
       simp [this]
 
 /-- 変数名 -/
