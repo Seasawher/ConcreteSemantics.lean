@@ -1,3 +1,4 @@
 {
-  "workbench.colorTheme": "Kimbie Dark"
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
 }
