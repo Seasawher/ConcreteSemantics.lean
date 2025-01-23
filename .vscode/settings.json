@@ -1,4 +1,5 @@
 {
   "files.trimTrailingWhitespace": true,
   "files.trimFinalNewlines": true,
+  "editor.unicodeHighlight.nonBasicASCII": false,
 }
