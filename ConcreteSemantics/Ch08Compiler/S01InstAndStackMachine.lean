@@ -73,68 +73,73 @@ abbrev Stack := List Val
 abbrev State := Vname → Val
 
 /-- マシンの状態 -/
-abbrev Config := Int × State × Stack
+structure Config where
+  /-- プログラムカウンタ -/
+  pc : Nat
+  /-- メモリ -/
+  s : State
+  /-- スタック -/
+  stk : Stack
+  deriving Inhabited
 
 /-- 機械語の実行 -/
 def iexec : Instr → Config → Config
-  | .Loadi n, (i, s, stk) => (i + 1, s, n :: stk)
-  | .Load x, (i, s, stk) => (i + 1, s, s x :: stk)
-  | .Add, (i, s, hd :: hd₂ :: stk) => (i + 1, s, (hd₂ + hd) :: stk)
+  | .Loadi n, ⟨i, s, stk⟩ => ⟨i + 1, s, n :: stk⟩
+  | .Load x, ⟨i, s, stk⟩ => ⟨i + 1, s, s x :: stk⟩
+  | .Add, ⟨i, s, hd :: hd₂ :: stk⟩ => ⟨i + 1, s, (hd₂ + hd) :: stk⟩
   | .Add, _ => panic! "スタックの数が2個未満だった (Add命令)"
-  | .Store x, (i, s, hd :: stk) => (i + 1, s[x ↦ hd], stk)
+  | .Store x, ⟨i, s, hd :: stk⟩ => ⟨i + 1, s[x ↦ hd], stk⟩
   | .Store _, _ => panic! "スタックの数が2個未満だった (Store命令)"
-  | .Jmp n, (i, s, stk) => (i + 1 + n, s, stk)
-  | .Jmpless n, (i, s, hd :: hd₂ :: stk) =>
-    (if hd₂ < hd then i + 1 + n else i + 1, s, stk)
+  | .Jmp n, ⟨i, s, stk⟩ => ⟨(i + 1 + n).toNat'.get!, s, stk⟩
+  | .Jmpless n, ⟨i, s, hd :: hd₂ :: stk⟩ =>
+    ⟨if hd₂ < hd then (i + 1 + n).toNat'.get! else i + 1, s, stk⟩
   | .Jmpless _, _ => panic! "スタックの数が2個未満だった (Jmpless命令)"
-  | .Jmpge n, (i, s, hd :: hd₂ :: stk) =>
-    (if hd ≤ hd₂ then i + 1 + n else i + 1, s, stk)
+  | .Jmpge n, ⟨i, s, hd :: hd₂ :: stk⟩ =>
+    ⟨if hd ≤ hd₂ then (i + 1 + n).toNat'.get! else i + 1, s, stk⟩
   | .Jmpge _, _ => panic! "スタックの数が2個未満だった (Jmpge命令)"
 
 /-- プログラムPと機械状態cにおいて, `iexec` を1回実行すると状態が c' に遷移する -/
 def exec1 (P : List Instr) (c c' : Config) : Prop :=
-  ∃ (i : Fin P.length) (s : State) (stk : Stack), c = (↑i, s, stk) ∧ c' = iexec P[i] c
+  iexec P[c.pc]! c = c' ∧ c.pc < P.length
 
 @[inherit_doc]
-notation P " ⊢ " c:100 " → " c' => exec1 P c c'
+notation P " ⊢ " c:100 " → " c':40 => exec1 P c c'
 
 /-- exec1 の反射的推移的閉包 -/
-inductive ExecStar : List Instr → Config → Config → Prop
+inductive execStar : List Instr → Config → Config → Prop
   /-- 反射的 -/
-  | refl (P : List Instr) (c : Config) : ExecStar P c c
+  | refl (P : List Instr) (c : Config) : execStar P c c
   /-- 推移的 -/
-  | step {P c c' c''} (h₁ : P ⊢ c → c') (h₂ : ExecStar P c' c'') : ExecStar P c c''
+  | step {P c c' c''} (h₁ : P ⊢ c → c') (h₂ : execStar P c' c'') : execStar P c c''
 
 @[inherit_doc]
-notation P " ⊢ " c:100 " →* " c' => ExecStar P c c'
+notation P " ⊢ " c:100 " →* " c':40 => execStar P c c'
 
--- TODO: Transのインスタンスを作成したいが, 二項関係に対してしか使えないので一旦保留
+section Trans
 
-/-- すぐ下のexampleで使うプログラム -/
-def exampleP : List Instr := [.Load "y", .Store "x"]
-/-- すぐ下のexampleで使うState -/
-def exampleS : State := fun x => if x = "x" then 3 else if x = "y" then 4 else 0
+  theorem exec1_exec1 {P a b c} (a_b : P ⊢ a → b) (b_c : P ⊢ b → c) : P ⊢ a →* c := by
+    apply execStar.step a_b
+    apply execStar.step b_c
+    apply execStar.refl
 
-example : ∃ i t stk, exampleP ⊢ (0, exampleS, []) →* (i, t, stk) := by
-  dsimp [exampleP, exampleS]
-  let s' : State := fun x => if x = "x" then 4 else if x = "y" then 4 else 0
-  exists 2, s', []
-  apply ExecStar.step (c' := (1, exampleS, [4]))
-  case h₁ =>
-    dsimp [exec1]
-    exists 0, exampleS, []
-  case h₂ =>
-    apply ExecStar.step (c' := (2, s', []))
-    case h₁ =>
-      dsimp [exec1]
-      exists 1, exampleS, [4]
-      constructor
-      · rfl
-      · dsimp [iexec]
-        congr
-        simp [exampleS, s']
-        funext x
-        split <;> (try split)
-        all_goals rfl
-    case h₂ =>
-      apply ExecStar.refl
+  theorem execStar_execStar {P a b c} (a__b : P ⊢ a →* b) (b__c : P ⊢ b →* c) : P ⊢ a →* c := by
+    induction a__b
+    case refl => exact b__c
+    case step h₁ h₂ ih =>
+      apply execStar.step h₁
+      exact ih b__c
+
+  theorem execStar_exec1 {P a b c} (a__b : P ⊢ a →* b) (b_c : P ⊢ b → c) : P ⊢ a →* c := by
+    apply execStar_execStar a__b
+    apply execStar.step b_c
+    apply execStar.refl
+
+end Trans
+
+def defS : State := fun _ => 0
+
+example : ([.Load "y", .Store "x"] ⊢ ⟨0, defS["x" ↦ 3]["y" ↦ 4], []⟩ →* ⟨2, defS["x" ↦ 4]["y" ↦ 4], []⟩) := by
+  apply exec1_exec1 (by simp [exec1, iexec]; rfl)
+  simp [exec1, iexec]
+  funext x
+  split <;> (try split) <;> rfl
