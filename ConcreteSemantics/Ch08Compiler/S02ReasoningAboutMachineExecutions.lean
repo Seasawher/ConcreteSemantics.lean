@@ -3,6 +3,9 @@ import ConcreteSemantics.Ch08Compiler.S01InstAndStackMachine
 /- ## Reasoning About Machine Executions -/
 namespace Compiler
 
+theorem getElem_int_eq_toNat {α : Type} (ls : List α) (i : Int) (pos : 0 ≤ i) (h : i < ls.length)
+  : ls[i] = ls[i.toNat] := rfl
+
 /-- プログラム P を機械状態 c で実行した結果 c' に遷移するなら, P にプログラムを付け足しても c' になる. -/
 theorem exec_appendR {P c c' P'} (h : P ⊢ c →* c') : (P ++ P') ⊢ c →* c' := by
   induction h
@@ -14,29 +17,40 @@ theorem exec_appendR {P c c' P'} (h : P ⊢ c →* c') : (P ++ P') ⊢ c →* c'
     rw [h₁.left.symm]
 
     have : P[c.pc]! = (P ++ P')[c.pc]! := by
-      simp only [List.getElem!_eq_getElem?_getD]
-      rw [List.getElem?_append_left h₁.right]
+      have : c.pc < ↑P.length + ↑P'.length := by omega
+      simp [getElem!_def, getElem?_def, h₁, this, getElem_int_eq_toNat]
+      rw [List.getElem_append_left (by omega)]
     rw [this]
 
+/-- exec_appendL のための補題 (Lemma 8.4) -/
 theorem iexec_shift {x c c' n} :
   (iexec x { c with pc := n + c.pc } = { c' with pc := n + c'.pc }) ↔ iexec x c = c' := by
   constructor <;> intro h
-  · cases x <;> (simp [iexec] at h ⊢)
-    -- panic!する分岐があるケースをどう処理したらいい？
-    case Add => sorry
-    case Store => sorry
-    case Jmpless => sorry
-    case Jmpge => sorry
+  case mp =>
+    unfold iexec
+    split
     all_goals
-      rcases h with ⟨h₁, h₂, h₃⟩
-      simp_all
+      simp [iexec] at h
+      try
+        rcases h with ⟨h₁, h₂, h₃⟩
+        simp_all
       congr
+    any_goals omega
+    all_goals
+      split <;> simp_all <;> omega
+    done
+  case mpr =>
+    unfold iexec
+    split
+    all_goals
+      symm at h
+      simp_all [iexec]
       try omega
-    -- ↓ h₁からゴールを導きたいが, IntとNatの変換でややこしくなっている
-    · rename_i intN
-      sorry
-  · sorry
+    all_goals
+      split <;> simp_all <;> omega
+    done
 
+/-- `P ⊢ c →* c'` の時、左に任意のプログラムP'を足してもこの関係が成り立つ. (Lemma 8.3) -/
 theorem exec_appendL {P c c' P'}
   (h : P ⊢ c →* c')
   : (P' ++ P) ⊢ { c with pc := P'.length + c.pc } →* { c' with pc := P'.length + c'.pc } := by
@@ -49,6 +63,28 @@ theorem exec_appendL {P c c' P'}
     -- rw [h₁.left.symm]
 
     -- この先はiexec_shiftを使って証明する
-    sorry
+    rw [iexec_shift, h₁.left.symm]
+    congr 1
+
+    -- getElem! を getElem にする
+    have h : 0 ≤ ↑P'.length + c.pc ∧ ↑P'.length + c.pc < ↑P'.length + ↑P.length := by omega
+    simp [getElem!_def, getElem?_def, h, h₁]
+    rw [getElem_append_distrib]
+    case e_a.pos => omega
+    case e_a.h => simp; omega
+    case e_a.h' => omega
+
+    -- ゴール中のif式は常にelse節へと評価される
+    have h : ¬ (↑P'.length + c.pc < ↑P'.length) := by omega
+    simp [h]
+    congr
+    omega
 
   done
+
+/-- プログラムと機械状態遷移の推移律 (Lemma 8.5) -/
+theorem exec_append_trans {P c c' P' c''}
+  (hc : c.pc = 0) (c__c' : P ⊢ c →* c') (hc' : P.length ≤ c'.pc)
+  (c'__c'' : P' ⊢ { c' with pc := c'.pc - P.length } →* c'')
+  : (P ++ P') ⊢ c →* { c'' with pc := P.length + c''.pc } := by
+  sorry

@@ -3,14 +3,20 @@ import ConcreteSemantics.Ch07IMP.S01IMPCommands
 /- ## Instructions and Stack Machine -/
 namespace Compiler
 
-variable {α : Type} [Inhabited α] (xs ys : List α)
+variable {α : Type} (xs ys : List α)
+
+instance : GetElem (List α) Int α (fun ls i => 0 ≤ i ∧ i < ls.length) where
+  getElem xs i _ := xs[i.toNat]
 
 /-- ### lemma 8.1
 自然数ではなくて、整数によるインデックスアクセスを考えて、
 インデックスアクセスの分配法則を証明する。
 -/
-example (i : Int) (pos : i ≥ 0)
-    : (xs ++ ys)[i.toNat]! = (if h : i < xs.length then xs[i.toNat] else ys[i.toNat - xs.length]!) := by
+theorem getElem_append_distrib (i : Int) (pos : 0 ≤ i) (h : i < (xs ++ ys).length) (h' : i - xs.length < ys.length)
+    : (xs ++ ys)[i] = (if h : i < xs.length then xs[i] else ys[i - xs.length]) := by
+  have (ls : List α) (h) : ls[i]'h = ls[i.toNat] := rfl
+  simp only [this]
+
   -- `i : Int` を自然数に翻訳する
   have ⟨n, hn⟩ : ∃ n : Nat, i.toNat = n := by
     exists i.toNat
@@ -23,24 +29,11 @@ example (i : Int) (pos : i ≥ 0)
   -- `n` が `xs` の範囲内にあるかどうかで場合分けをする
   by_cases h : n < xs.length
   · simp [h]
-    rw [List.getElem?_append_left h]
-    have : xs[n]? = some xs[n] := by
-      exact (List.getElem?_eq_some_getElem_iff xs n h).mpr trivial
-    simp [this]
+    rw [List.getElem_append_left h]
   · simp [h]
-
-    -- `n` が `xs ++ ys` の範囲内にあるかどうかで場合分けをする
-    by_cases valid : n < (xs ++ ys).length
-    case neg =>
-      simp [show (xs ++ ys)[n]? = none from by simp_all]
-      have : n - xs.length ≥ ys.length := by
-        simp at valid h
-        omega
-      simp [show ys[n - xs.length]? = none from by simp_all]
-    case pos =>
-      simp at h
-      have := List.getElem?_append_right (l₁ := xs) (l₂ := ys) (i := n) h
-      simp [this]
+    rw [show ys[i - xs.length] = ys[(i - xs.length).toNat] by rfl]
+    simp [hn]
+    rw [List.getElem_append_right (by omega)]
 
 /-- 変数名 -/
 abbrev Vname := String
@@ -75,7 +68,7 @@ abbrev State := Vname → Val
 /-- マシンの状態 -/
 structure Config where
   /-- プログラムカウンタ -/
-  pc : Nat
+  pc : Int
   /-- メモリ -/
   s : State
   /-- スタック -/
@@ -86,21 +79,17 @@ structure Config where
 def iexec : Instr → Config → Config
   | .Loadi n, ⟨i, s, stk⟩ => ⟨i + 1, s, n :: stk⟩
   | .Load x, ⟨i, s, stk⟩ => ⟨i + 1, s, s x :: stk⟩
-  | .Add, ⟨i, s, hd :: hd₂ :: stk⟩ => ⟨i + 1, s, (hd₂ + hd) :: stk⟩
-  | .Add, _ => panic! "スタックの数が2個未満だった (Add命令)"
-  | .Store x, ⟨i, s, hd :: stk⟩ => ⟨i + 1, s[x ↦ hd], stk⟩
-  | .Store _, _ => panic! "スタックの数が2個未満だった (Store命令)"
-  | .Jmp n, ⟨i, s, stk⟩ => ⟨(i + 1 + n).toNat'.get!, s, stk⟩
-  | .Jmpless n, ⟨i, s, hd :: hd₂ :: stk⟩ =>
-    ⟨if hd₂ < hd then (i + 1 + n).toNat'.get! else i + 1, s, stk⟩
-  | .Jmpless _, _ => panic! "スタックの数が2個未満だった (Jmpless命令)"
-  | .Jmpge n, ⟨i, s, hd :: hd₂ :: stk⟩ =>
-    ⟨if hd ≤ hd₂ then (i + 1 + n).toNat'.get! else i + 1, s, stk⟩
-  | .Jmpge _, _ => panic! "スタックの数が2個未満だった (Jmpge命令)"
+  | .Add, ⟨i, s, stk⟩ => ⟨i + 1, s, (stk[1]! + stk[0]!) :: stk.drop 2⟩
+  | .Store x, ⟨i, s, stk⟩ => ⟨i + 1, s[x ↦ stk[0]!], stk.drop 1⟩
+  | .Jmp n, ⟨i, s, stk⟩ => ⟨i + 1 + n, s, stk⟩
+  | .Jmpless n, ⟨i, s, stk⟩ =>
+    ⟨if stk[1]! < stk[0]! then i + 1 + n else i + 1, s, stk.drop 2⟩
+  | .Jmpge n, ⟨i, s, stk⟩ =>
+    ⟨if stk[0]! ≤ stk[1]! then i + 1 + n else i + 1, s, stk.drop 2⟩
 
 /-- プログラムPと機械状態cにおいて, `iexec` を1回実行すると状態が c' に遷移する -/
 def exec1 (P : List Instr) (c c' : Config) : Prop :=
-  iexec P[c.pc]! c = c' ∧ c.pc < P.length
+  iexec P[c.pc]! c = c' ∧ 0 ≤ c.pc ∧ c.pc < P.length
 
 @[inherit_doc]
 notation P " ⊢ " c:100 " → " c':40 => exec1 P c c'
@@ -137,6 +126,14 @@ section Trans
 end Trans
 
 def defS : State := fun _ => 0
+
+@[simp] protected theorem getElem_cons_zero (xs : List α) (x : α) : (x :: xs)[(0 : Int)] = x := rfl
+@[simp] protected theorem getElem!_cons_zero [Inhabited α] (xs : List α) (x : α) : (x :: xs)[(0 : Int)]! = x := by
+  simp [getElem!_def, getElem?_def]
+@[simp] protected theorem getElem_cons_one [Inhabited α] (xs : List α) (a b : α) : (a :: b :: xs)[(1 : Int)]! = b := by
+  have : 1 < (xs.length : Int) + 1 + 1 := by omega
+  simp [getElem!_def, getElem?_def, this]
+  rfl
 
 example : ([.Load "y", .Store "x"] ⊢ ⟨0, defS["x" ↦ 3]["y" ↦ 4], []⟩ →* ⟨2, defS["x" ↦ 4]["y" ↦ 4], []⟩) := by
   apply exec1_exec1 (by simp [exec1, iexec]; rfl)
