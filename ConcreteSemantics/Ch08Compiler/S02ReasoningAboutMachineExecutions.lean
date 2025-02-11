@@ -84,7 +84,12 @@ theorem exec_appendL {P c c' P'}
 
 /-- プログラムと機械状態遷移の推移律 (Lemma 8.5) -/
 theorem exec_append_trans {P c c' P' c''}
-  (hc : c.pc = 0) (c__c' : P ⊢ c →* c') (hc' : P.length ≤ c'.pc)
+  (c__c' : P ⊢ c →* c')
   (c'__c'' : P' ⊢ { c' with pc := c'.pc - P.length } →* c'')
   : (P ++ P') ⊢ c →* { c'' with pc := P.length + c''.pc } := by
-  sorry
+  have := exec_appendL c'__c'' (P' := P)
+  simp at this
+  rw [show ↑P.length + (c'.pc - ↑P.length) = c'.pc by omega] at this
+  apply execStar_execStar ?_ this
+  apply exec_appendR
+  exact c__c'
