@@ -57,7 +57,7 @@ inductive Instr where
   | Jmpless (n : Int)
   /-- スタックの一番上とその下を比較し、二つ目の方が大きいか等しければ ジャンプする -/
   | Jmpge (n : Int)
-  deriving Inhabited
+  deriving Inhabited, Repr, DecidableEq
 
 /-- スタック -/
 abbrev Stack := List Val
